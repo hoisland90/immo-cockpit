@@ -92,26 +92,6 @@ if not os.path.exists(PDF_DIR):
 # 0. DATEN-MANAGEMENT
 # ==========================================
 DEFAULT_OBJEKTE = {
-    "Brackel (Neubau Sorgenfrei)": {
-        "Adresse": "Beispielstraße 1, 21438 Brackel",
-        "qm": 45, "zimmer": 2.0, "bj": 2021,
-        "Kaufpreis": 119000, "Nebenkosten_Quote": 0.1057,
-        "Renovierung": 0, "Heizung_Puffer": 0, "AfA_Satz": 0.02,
-        "Miete_Start": 570, "Hausgeld_Gesamt": 180, "Kosten_n_uml": 40,
-        "Wertsteigerung_Immo": 0.02, "Mietsteigerung": 0.02, "Marktmiete_m2": 10.50,
-        "Energie_Info": "Bedarfsausweis, Klasse A/B (Neubau)",
-        "Status": "Vermietet (Staffelmiete)",
-        "Lage_Beschreibung": """Ruhige Dorflage im Speckgürtel. Gute Anbindung über A7, aber PKW notwendig. Ländlich geprägt, ideal für Pendler, die Ruhe suchen.""",
-        "Link": "https://www.kleinanzeigen.de/s-anzeige/charmante-2-zimmer-wohnung-in-brackel-als-kapitalanlage/3274042827-196-2809",
-        "Bild_URLs": [], "PDF_Path": "", 
-        "Basis_Info": """IST-Miete laut Exposé (Staffelmiete). Hausgeld konservativ geschätzt. AfA Standard 2%.""",
-        "Summary_Case": """Klassische 'Cashflow-Cow'. Durch den sehr günstigen Einkaufspreis und die hohe Mietrendite trägt sich das Objekt fast von selbst.""",
-        "Summary_Pros": """- Neubau-Standard (2021): Kein Sanierungsrisiko.
-- Hohe Anfangsrendite.
-- Staffelmiete vereinbart.""",
-        "Summary_Cons": """- B-Lage (Brackel).
-- Kleines Objekt."""
-    },
     "Elmshorn (Substanz & Hebel)": {
         "Adresse": "Innenstadtbereich, 25335 Elmshorn",
         "qm": 76, "zimmer": 2.0, "bj": 1960,
@@ -131,50 +111,12 @@ DEFAULT_OBJEKTE = {
 - Top Anbindung nach Hamburg.""",
         "Summary_Cons": """- Baujahr 1960: Mittelfristiges Sanierungsrisiko."""
     },
-    "Eißendorf (Bj. 1994)": {
-        "Adresse": "Ehestorfer Weg / Umfeld, 21075 Hamburg",
-        "qm": 54, "zimmer": 2.0, "bj": 1994,
-        "Kaufpreis": 195000, "Nebenkosten_Quote": 0.1107,
-        "Renovierung": 0, "Heizung_Puffer": 0, "AfA_Satz": 0.02,
-        "Miete_Start": 705, "Hausgeld_Gesamt": 285, "Kosten_n_uml": 80,
-        "Wertsteigerung_Immo": 0.02, "Mietsteigerung": 0.02, "Marktmiete_m2": 13.50,
-        "Energie_Info": "Verbrauchsausweis, 119 kWh (D), Gas-Zentral",
-        "Status": "Vermietet (Solide)",
-        "Lage_Beschreibung": """Beliebte Wohnlage in Hamburg-Eißendorf (Süd). Ruhig und grün (Nähe Harburger Berge), dennoch gute Busanbindung zum Harburger Zentrum. Solide bürgerliche Gegend.""",
-        "Link": "https://www.immobilienscout24.de/expose/164391718",
-        "Bild_URLs": [], 
-        "PDF_Path": "", 
-        "Basis_Info": """Hausgeld 285€ inkl. Rücklage. Miete 13€/qm ist marktüblich.""",
-        "Summary_Case": """Sicherheits-Anker ('Safe Haven'). Qualitatives Fundament des Portfolios.""",
-        "Summary_Pros": """- Top-Zustand (Bj. 1994): Fußbodenheizung.
-- Starke Mieteinnahme.""",
-        "Summary_Cons": """- Cashflow leicht negativ."""
-    },
-    "Harburg (Immovion - Risk Adjusted)": {
-        "Adresse": "Hastedtstraße / Hastedtplatz, 21073 Hamburg (Harburg-Zentrum)", 
-        "qm": 57, "zimmer": 2.0, "bj": 1954,
-        "Kaufpreis": 159000, "Nebenkosten_Quote": 0.1107,
-        "Renovierung": 5000, "Heizung_Puffer": 10000, "AfA_Satz": 0.025,
-        "Miete_Start": 770, "Hausgeld_Gesamt": 162, "Kosten_n_uml": 60,
-        "Wertsteigerung_Immo": 0.02, "Mietsteigerung": 0.02, "Marktmiete_m2": 13.60,
-        "Energie_Info": "Verbrauch: 176 kWh (F), Gas",
-        "Status": "Vermietet (Frei ab Frühjahr 2026)",
-        "Lage_Beschreibung": """Zentrale City-Lage Harburg. Harburger Bahnhof (Fernverkehr) nur ca. 700m entfernt (5 Min). S-Bahn fußläufig (15 Min zum Hbf Hamburg). Phoenix-Center und Harburg-Arcaden in unmittelbarer Nähe. Hoher Freizeitwert durch Hastedtplatz/Grünflächen.""",
-        "Link": "", "Bild_URLs": [], "PDF_Path": "", 
-        "Basis_Info": """Szenario: 2,5% AfA. Invest inkl. 5k Reno + 10k Heizungs-Puffer. Miete auf 13,50€/qm.""",
-        "Summary_Case": """Aggressive Rendite-Strategie mit Sicherheitsnetz. Günstiger Einkaufspreis erlaubt Investitionen.""",
-        "Summary_Pros": """- Sehr günstiger Einkauf (< 2.800 EUR/qm).
-- Steuer-Booster: 2,5% AfA.
-- Puffer für Heizungstausch ist einkalkuliert.""",
-        "Summary_Cons": """- Energieklasse F (Sanierungsstau).
-- AfA-Erhöhung erfordert Gutachten."""
-    },
     "Meckelfeld (Eigenland)": {
         "Adresse": "Am Bach (Sackgasse), 21217 Seevetal (Meckelfeld)", 
         "qm": 59, "zimmer": 2.0, "bj": 1965,
         "Kaufpreis": 180000, 
         "Nebenkosten_Quote": 0.07, # 5% GrESt + 2% Notar (KEIN Makler)
-        "Renovierung": 0, "Heizung_Puffer": 2000, # Kleiner Sicherheitspuffer (Feuchtigkeit?)
+        "Renovierung": 0, "Heizung_Puffer": 2000, # Kleiner Sicherheitspuffer
         "AfA_Satz": 0.03, # 3% als konservatives Szenario (4% möglich)
         "Miete_Start": 632.50, 
         "Hausgeld_Gesamt": 368, 
@@ -195,6 +137,35 @@ DEFAULT_OBJEKTE = {
         "Summary_Cons": """- Energieklasse F (181 kWh).
 - Halbparterre (Feuchtigkeitsrisiko prüfen).
 - Sonderumlage Müllplatz möglich (ca. 220€ Anteil)."""
+    },
+    "Harburg (Maisonette / Loft)": {
+        "Adresse": "Marienstr. 52, 21073 Hamburg (Harburg-Zentrum)", 
+        "qm": 71, # ca. 62 qm Wfl + 10 qm Nutzfl.
+        "zimmer": 2.0, "bj": 1954,
+        "Kaufpreis": 230000, 
+        "Nebenkosten_Quote": 0.1107, # Makler + Notar + Steuer
+        "Renovierung": 0, 
+        "Heizung_Puffer": 5000, # Gasetagenheizung + Wasserschaden-Risiko
+        "AfA_Satz": 0.02, 
+        "Miete_Start": 720, 
+        "Hausgeld_Gesamt": 204, 
+        "Kosten_n_uml": 84, # ca. 83-84 € (Bewirtschaftung + kleine Rücklage)
+        "Wertsteigerung_Immo": 0.02, 
+        "Mietsteigerung": 0.02, 
+        "Marktmiete_m2": 12.00,
+        "Energie_Info": "Bedarfsausweis 116 kWh (D), Gas-Etagenhzg.",
+        "Status": "Vermietet (Mieter sucht neue Whg)",
+        "Lage_Beschreibung": """Zentrale Lage in Harburg, Nähe TUHH und Phoenix-Center. Urbanes Umfeld.""",
+        "Link": "", 
+        "Bild_URLs": [], "PDF_Path": "", 
+        "Basis_Info": """Liebhaber-Objekt mit Galerie. Optisch top, aber wirtschaftlich herausfordernd (negativer Cashflow). WEG mit Themen (Müll/Lärm/Wasser).""",
+        "Summary_Case": """Lifestyle-Investment ("Trophy Asset"). Kaufentscheidung basiert auf Optik/Lage, nicht auf Cashflow.""",
+        "Summary_Pros": """- Einzigartiger Schnitt (Galerie/Loft).
+- Hohes Vermietungspotenzial an Studenten/Dozenten (TUHH).
+- Chance auf Mietanpassung bei Mieterwechsel.""",
+        "Summary_Cons": """- Deutlich negativer Cashflow (~ -400€/mtl).
+- WEG: Geringe Rücklagen & soziale Thematiken.
+- Aktiver Wasserschaden im Haus (Leckage)."""
     }
 }
 
@@ -212,9 +183,11 @@ def load_data():
                     if field not in data[key]:
                         data[key][field] = default_val
             
-            # Aufräumen (optional, wenn du alte Testdaten löschen willst)
-            # keys_to_remove = [k for k in data.keys() if k not in DEFAULT_OBJEKTE]
-            # for k in keys_to_remove: del data[k]
+            # Aufräumen: Entferne Objekte, die nicht mehr in DEFAULT_OBJEKTE sind
+            # (Damit Brackel, Eißendorf etc. verschwinden)
+            keys_to_remove = [k for k in data.keys() if k not in DEFAULT_OBJEKTE]
+            for k in keys_to_remove: 
+                del data[k]
             
             return data
     else:
