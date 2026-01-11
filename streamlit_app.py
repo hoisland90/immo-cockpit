@@ -168,6 +168,33 @@ DEFAULT_OBJEKTE = {
 - Puffer für Heizungstausch ist einkalkuliert.""",
         "Summary_Cons": """- Energieklasse F (Sanierungsstau).
 - AfA-Erhöhung erfordert Gutachten."""
+    },
+    "Meckelfeld (Eigenland)": {
+        "Adresse": "Am Bach (Sackgasse), 21217 Seevetal (Meckelfeld)", 
+        "qm": 59, "zimmer": 2.0, "bj": 1965,
+        "Kaufpreis": 180000, 
+        "Nebenkosten_Quote": 0.07, # 5% GrESt + 2% Notar (KEIN Makler)
+        "Renovierung": 0, "Heizung_Puffer": 2000, # Kleiner Sicherheitspuffer (Feuchtigkeit?)
+        "AfA_Satz": 0.03, # 3% als konservatives Szenario (4% möglich)
+        "Miete_Start": 632.50, 
+        "Hausgeld_Gesamt": 368, 
+        "Kosten_n_uml": 190, # 190,08 EUR lt. Wirtschaftsplan
+        "Wertsteigerung_Immo": 0.02, 
+        "Mietsteigerung": 0.02, 
+        "Marktmiete_m2": 11.70,
+        "Energie_Info": "Verbrauchsausweis 181 kWh (F), Gas",
+        "Status": "Vermietet (Fixe Erhöhung 2027)",
+        "Lage_Beschreibung": """Ruhige Sackgassenlage in Meckelfeld (Seevetal). Gute Anbindung nach Hamburg. Wohnung liegt im Halbparterre.""",
+        "Link": "https://www.kleinanzeigen.de/s-anzeige/etw-kapitalanlage-meckelfeld-eigenland-ohne-makler-/3295455732-196-2812", 
+        "Bild_URLs": [], "PDF_Path": "", 
+        "Basis_Info": """Miete steigt fix auf 690€ ab 07/2027. NK-Quote nur 7% da provisionsfrei. AfA-Potenzial (3-4%).""",
+        "Summary_Case": """Substanz-Deal mit extremem Steuer-Hebel. Durch 100% Finanzierung und optimierte AfA (3-4%) sehr hohe Eigenkapitalrendite.""",
+        "Summary_Pros": """- Provisionsfrei (Geringer Cash-Einsatz).
+- Fixe Mietsteigerung 2027 vereinbart.
+- Sehr hohe Rücklagenbildung (gut für Substanz).""",
+        "Summary_Cons": """- Energieklasse F (181 kWh).
+- Halbparterre (Feuchtigkeitsrisiko prüfen).
+- Sonderumlage Müllplatz möglich (ca. 220€ Anteil)."""
     }
 }
 
@@ -176,15 +203,19 @@ def load_data():
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
             if not data: return DEFAULT_OBJEKTE
+            # Merge neuer Objekte in bestehende Daten
             for key, val in DEFAULT_OBJEKTE.items():
                 if key not in data:
                     data[key] = val
+                # Neue Felder ergänzen falls nötig
                 for field, default_val in val.items():
                     if field not in data[key]:
                         data[key][field] = default_val
-            keys_to_remove = [k for k in data.keys() if k not in DEFAULT_OBJEKTE]
-            for k in keys_to_remove:
-                del data[k]
+            
+            # Aufräumen (optional, wenn du alte Testdaten löschen willst)
+            # keys_to_remove = [k for k in data.keys() if k not in DEFAULT_OBJEKTE]
+            # for k in keys_to_remove: del data[k]
+            
             return data
     else:
         save_data(DEFAULT_OBJEKTE)
@@ -302,8 +333,8 @@ if st.sidebar.button("⚠️ Daten Reset (Auf Standard)"):
     st.rerun()
 
 st.sidebar.header("🏦 Finanzierung (Global)")
-global_zins = st.sidebar.number_input("Zins Bank (%)", 1.0, 6.0, 3.70, 0.1) / 100
-global_tilgung = st.sidebar.number_input("Tilgung (%)", 0.0, 10.0, 2.00, 0.1) / 100
+global_zins = st.sidebar.number_input("Zins Bank (%)", 1.0, 6.0, 3.80, 0.1) / 100 # Default auf 3.8 angepasst
+global_tilgung = st.sidebar.number_input("Tilgung (%)", 0.0, 10.0, 1.50, 0.1) / 100 # Default auf 1.5 angepasst
 global_steuer = st.sidebar.number_input("Steuersatz (%)", 20.0, 50.0, 42.00, 0.5) / 100
 
 def calculate_investment(obj_name, params, zins_indiv=None, mietsteig_indiv=None, wertsteig_indiv=None, afa_indiv=None):
