@@ -45,7 +45,7 @@ PDF_DIR = "expose_files"
 if not os.path.exists(PDF_DIR): os.makedirs(PDF_DIR)
 
 # ==========================================
-# 0. DATEN (DAS 4-SÄULEN PORTFOLIO - FINAL)
+# 0. DATEN (DAS 4-SÄULEN PORTFOLIO - KORRIGIERT)
 # ==========================================
 DEFAULT_OBJEKTE = {
     "Meckelfeld (Cashflow-King)": {
@@ -74,8 +74,8 @@ DEFAULT_OBJEKTE = {
         "Marktmiete_m2": 11.00, "Energie_Info": "104,9 kWh (C), Gas Bj. 2012",
         "Status": "Vermietet (Staffel 2026/27)",
         "Link": "https://www.kleinanzeigen.de/s-anzeige/moderne-2-zimmer-wohnung-inkl-aussenstellplatz-in-begehrter-lage/3296695424-196-2807", 
-        "Basis_Info": """Staffelmiete (im Exposé zugesichert): 2026 -> 765€, 2027 -> 815€. Heizung lt. Ausweis 2012 (nicht 1994!).""",
-        "Summary_Case": """Solides Investment mit eingebautem Rendite-Turbo und guter Substanz.""",
+        "Basis_Info": """Staffelmiete: 2026 -> 765€, 2027 -> 815€. Heizung lt. Ausweis 2012 (Klasse C).""",
+        "Summary_Case": """Solides Investment mit eingebautem Rendite-Turbo (Staffel) und guter Substanz.""",
         "Summary_Pros": """- Heizung Bj. 2012 (Energie C).\n- Miete steigt fix auf 815€ (2027).\n- Terrasse & TG.""",
         "Summary_Cons": """- Hohes Hausgeld (Rücklagen).\n- Nachtrag zur Miete noch einzuholen."""
     },
@@ -116,18 +116,15 @@ def load_data():
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
-            # Merge logic: Keep user edits, add new defaults, remove deleted objects
+            # Logik: Alte/Falsche Elmshorn-Daten überschreiben, aber individuelle User-Änderungen an anderen Objekten behalten
             merged = {k: v for k, v in data.items() if k in DEFAULT_OBJEKTE} 
             for k, v in DEFAULT_OBJEKTE.items():
                 if k not in merged:
                     merged[k] = v
                 else:
-                    # Special Update for Elmshorn if user has old data
-                    if "Elmshorn" in k:
-                         # Force update critical fields from default if they look old
-                         if merged[k].get("Heizung_Puffer") > 2000:
-                             merged[k]["Heizung_Puffer"] = 1000
-                             merged[k]["Energie_Info"] = DEFAULT_OBJEKTE[k]["Energie_Info"]
+                    # Erzwinge Update für Elmshorn, um die falschen 200k zu löschen
+                    if "Elmshorn" in k and merged[k]["Kaufpreis"] < 210000:
+                         merged[k] = v
             return merged
     return DEFAULT_OBJEKTE
 
@@ -175,8 +172,7 @@ def calculate_investment(obj_name, params):
                 rent_yr = 9780 
             elif jahr > 2027:
                 # Ab 2028 normale Steigerung auf Basis 2027
-                # i=2 (2028) -> (i-1)=1 Jahr Steigerung
-                rent_yr = 9780 * (1 + miet_st)**(i - 1) 
+                rent_yr = 9780 * (1 + miet_st)**(i - 2) 
             else: 
                 rent_yr = rent_start # Fallback 2025
         else:
@@ -251,10 +247,11 @@ if page == "Portfolio":
         "Kaufpreis": f"{r['KP']:,.0f} €",
         "Invest (EK)": f"{r['Invest']:,.0f} €",
         "Rendite (Start)": f"{r['Rendite']:.2f} %",
-        "EK-Rendite (10J)": f"{r['CAGR']:.2f} %",
-        "Ø CF (mtl. 10J)": f"{r['Avg_CF']:,.0f} €"
+        "EKR (10J)": f"{r['CAGR']:.2f} %",
+        "Ø CF (mtl. 10J)": f"{r['Avg_CF']:,.0f} €",
+        "Gewinn (10J)": f"{r['Gewinn_10J']:,.0f} €"
     } for r in results])
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(df, use_container_width=True, hide_index=True)
 
 else:
     st.title("🔍 Details & Edit")
