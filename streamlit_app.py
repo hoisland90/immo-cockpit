@@ -51,7 +51,7 @@ if not os.path.exists(MEDIA_DIR):
     os.makedirs(MEDIA_DIR)
 
 # ==========================================
-# 0. DATEN (NUR NOCH DIE 4 SÄULEN)
+# 0. DATEN (NUR DIE 4 SÄULEN)
 # ==========================================
 DEFAULT_OBJEKTE = {
     "Meckelfeld (Cashflow-King)": {
@@ -127,10 +127,9 @@ def load_data():
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
             # Logik: Filtern! Wir behalten nur Objekte, die in DEFAULT_OBJEKTE stehen.
-            # Alles andere (z.B. Brackel, Eißendorf, altes Elmshorn) wird gelöscht.
             merged = {k: v for k, v in data.items() if k in DEFAULT_OBJEKTE}
             
-            # Falls neue Defaults dazu kamen (oder Reset), auffüllen
+            # Neue Defaults auffüllen
             for k, v in DEFAULT_OBJEKTE.items():
                 if k not in merged:
                     merged[k] = v
@@ -175,7 +174,7 @@ def create_pdf_expose(obj_name, data, res):
     return pdf.output(dest='S').encode('latin-1', 'replace')
 
 # ==========================================
-# 2. BERECHNUNGSKERN
+# 2. BERECHNUNGSKERN (MIT 20-JAHRES-DATEN)
 # ==========================================
 st.sidebar.title("🧭 Navigation")
 page = st.sidebar.radio("Menü:", ["📊 Portfolio Übersicht", "🔍 Detail-Ansicht & Bearbeiten"])
@@ -198,8 +197,6 @@ def calculate_investment(obj_name, params):
     loan = kp
     rate_pa = loan * (zins + global_tilgung)
     
-    # Spezielle Logik für Elmshorn (Staffel)
-    # Da wir nur noch EIN Elmshorn haben, prüfen wir auf "Elmshorn" im Namen
     is_elmshorn_staffel = "Elmshorn" in obj_name and "Terrasse" in obj_name
     rent_start = params["Miete_Start"] * 12
     
@@ -207,19 +204,15 @@ def calculate_investment(obj_name, params):
     restschuld = loan
     immo_wert = kp
     
+    # 20 Jahre Berechnung
     for i in range(20):
         jahr = START_JAHR + i
         
         if is_elmshorn_staffel:
-            # Staffel: 2026=9180 (765), 2027=9780 (815), danach Steigerung
-            if jahr == 2026: 
-                rent_yr = 9180 
-            elif jahr == 2027: 
-                rent_yr = 9780 
-            elif jahr > 2027:
-                rent_yr = 9780 * (1 + miet_st)**(i - 2) 
-            else: 
-                rent_yr = rent_start
+            if jahr == 2026: rent_yr = 9180 
+            elif jahr == 2027: rent_yr = 9780 
+            elif jahr > 2027: rent_yr = 9780 * (1 + miet_st)**(i - 2) 
+            else: rent_yr = rent_start
         else:
             rent_yr = rent_start * (1 + miet_st)**i
             
@@ -233,12 +226,21 @@ def calculate_investment(obj_name, params):
         cf = rent_yr - rate_pa - costs + tax
         
         restschuld -= tilgung
-        data.append({"CF_Nach_Steuer": cf, "Immo_Wert": immo_wert, "Restschuld": restschuld})
+        
+        # Daten für Tabelle speichern
+        data.append({
+            "Jahr": jahr,
+            "Miete (p.a.)": rent_yr,
+            "CF (netto)": cf,
+            "Restschuld": restschuld,
+            "Immo-Wert": immo_wert,
+            "Equity (Wert-Schuld)": immo_wert - restschuld
+        })
 
-    res_10 = data[9]
-    equity_10 = (res_10["Immo_Wert"] - res_10["Restschuld"]) + sum([d["CF_Nach_Steuer"] for d in data[:10]])
+    res_10 = data[9] # Jahr 10
+    equity_10 = (res_10["Immo-Wert"] - res_10["Restschuld"]) + sum([d["CF (netto)"] for d in data[:10]])
     cagr = ((equity_10 / invest)**(0.1) - 1) * 100 if invest > 0 else 0
-    avg_cf = sum([d["CF_Nach_Steuer"] for d in data[:10]]) / 120
+    avg_cf = sum([d["CF (netto)"] for d in data[:10]]) / 120
     
     return {
         "Name": obj_name, "Invest": invest, "KP": kp, "Rendite": (rent_start/kp)*100,
@@ -280,7 +282,7 @@ else:
     obj_data = OBJEKTE[sel]
     
     # ----------------------------------------------------
-    # STECKBRIEF
+    # STECKBRIEF (MIT GALERIE & DOWNLOAD)
     # ----------------------------------------------------
     st.markdown("### 📍 Objekt-Steckbrief")
     with st.container(border=True):
@@ -297,9 +299,7 @@ else:
     if obj_data.get("Basis_Info"):
         st.info(f"ℹ️ **Info:** {obj_data['Basis_Info']}")
 
-    # ----------------------------------------------------
-    # LINKS & UPLOADS
-    # ----------------------------------------------------
+    # Links & PDF Button
     c_link, c_pdf = st.columns(2)
     url = obj_data.get("Link", "")
     if url:
@@ -310,7 +310,7 @@ else:
         with open(pdf_path, "rb") as f:
             c_pdf.download_button("📄 Exposé PDF", f, file_name=os.path.basename(pdf_path), use_container_width=True)
     else:
-        c_pdf.warning("Kein PDF hinterlegt (Upload unten)")
+        c_pdf.warning("Kein PDF hinterlegt")
 
     img_urls = obj_data.get("Bild_URLs", [])
     if img_urls:
@@ -322,12 +322,13 @@ else:
                 st.image(u, use_container_width=True)
 
     # ----------------------------------------------------
-    # KPI & LIVE-CALC
+    # KPI & LIVE-CALC & BEARBEITUNG
     # ----------------------------------------------------
     st.markdown("---")
-    st.header("📊 Core KPIs (Live-Calc)")
+    st.header("📊 Kalkulation & Szenarien")
     
-    with st.expander("⚙️ Parameter bearbeiten (Live)", expanded=True):
+    # PARAMETER BEARBEITEN
+    with st.expander("⚙️ Parameter anpassen (Live)", expanded=True):
         c1, c2, c3, c4 = st.columns(4)
         curr_z = obj_data.get("Zins_Indiv", global_zins)
         curr_a = obj_data.get("AfA_Satz", 0.02)
@@ -347,6 +348,7 @@ else:
             save_data(OBJEKTE)
             st.rerun()
 
+    # ERGEBNISSE
     res = calculate_investment(sel, OBJEKTE[sel])
     
     k1, k2, k3 = st.columns(3)
@@ -355,10 +357,28 @@ else:
     k3.metric("Gewinn nach 10J", f"{res['Gewinn_10J']:,.0f} €")
 
     # ----------------------------------------------------
+    # DER 20-JAHRES-PLAN (TABELLE)
+    # ----------------------------------------------------
+    st.subheader("📋 Der 20-Jahres-Plan")
+    df_plan = pd.DataFrame(res["Detail"])
+    # Formatierung für schöne Anzeige
+    st.dataframe(
+        df_plan.style.format({
+            "Miete (p.a.)": "{:,.0f} €",
+            "CF (netto)": "{:,.0f} €",
+            "Restschuld": "{:,.0f} €",
+            "Immo-Wert": "{:,.0f} €",
+            "Equity (Wert-Schuld)": "{:,.0f} €"
+        }),
+        use_container_width=True,
+        height=400 # Feste Höhe zum Scrollen
+    )
+
+    # ----------------------------------------------------
     # EDIT & UPLOAD AREA
     # ----------------------------------------------------
     st.markdown("---")
-    st.header("⚙️ Daten & Uploads")
+    st.header("⚙️ Daten ändern & Uploads")
     
     with st.expander("📝 Stammdaten & Texte bearbeiten", expanded=False):
         c_e1, c_e2, c_e3 = st.columns(3)
@@ -372,7 +392,7 @@ else:
         
         n_imgs = st.text_area("Bild-URLs (eine pro Zeile)", value="\n".join(obj_data.get("Bild_URLs", [])))
         
-        if st.button("💾 Speichern"):
+        if st.button("💾 Änderungen Speichern"):
             OBJEKTE[sel].update({
                 "Kaufpreis": n_kp, "Miete_Start": n_miete, "qm": n_qm,
                 "Summary_Case": n_case, "Summary_Pros": n_pros, "Summary_Cons": n_cons,
