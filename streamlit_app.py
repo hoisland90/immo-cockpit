@@ -170,7 +170,7 @@ def create_pdf_expose(obj_name, data, res):
     return pdf.output(dest='S').encode('latin-1', 'replace')
 
 # ==========================================
-# 2. BERECHNUNGSKERN (20 JAHRE)
+# 2. BERECHNUNGSKERN (MIT PRE-TAX CF)
 # ==========================================
 st.sidebar.title("🧭 Navigation")
 page = st.sidebar.radio("Menü:", ["📊 Portfolio Übersicht", "🔍 Detail-Ansicht & Bearbeiten"])
@@ -217,9 +217,15 @@ def calculate_investment(obj_name, params):
         tilgung = rate_pa - zinsen
         costs = params["Kosten_n_uml"] * 12
         
+        # Cashflow VOR Steuer (Miete - Rate - Kosten)
+        cf_pre_tax = rent_yr - rate_pa - costs
+
+        # Steuer-Effekt
         tax_base = rent_yr - zinsen - (kp*0.8*afa_rate) - costs
         tax = tax_base * global_steuer * -1
-        cf = rent_yr - rate_pa - costs + tax
+        
+        # Cashflow NACH Steuer
+        cf_post_tax = cf_pre_tax + tax
         
         restschuld -= tilgung
         
@@ -227,17 +233,18 @@ def calculate_investment(obj_name, params):
             "Jahr": jahr,
             "Laufzeit": f"Jahr {i+1}",
             "Miete (p.a.)": rent_yr,
-            "CF (netto)": cf,
+            "CF (vor Steuer)": cf_pre_tax,
+            "CF (nach Steuer)": cf_post_tax,
             "Restschuld": restschuld,
             "Immo-Wert": immo_wert,
-            "Equity (Gewinn bei Verkauf)": immo_wert - restschuld - invest + (sum([d["CF (netto)"] for d in data]) if i>0 else 0)
+            "Equity": immo_wert - restschuld
         })
 
     # KPIs Jahr 10
     res_10 = data[9] 
-    equity_10 = (res_10["Immo-Wert"] - res_10["Restschuld"]) + sum([d["CF (netto)"] for d in data[:10]])
+    equity_10 = res_10["Equity"] + sum([d["CF (nach Steuer)"] for d in data[:10]])
     cagr = ((equity_10 / invest)**(0.1) - 1) * 100 if invest > 0 else 0
-    avg_cf = sum([d["CF (netto)"] for d in data[:10]]) / 120
+    avg_cf = sum([d["CF (nach Steuer)"] for d in data[:10]]) / 120
     
     return {
         "Name": obj_name, "Invest": invest, "KP": kp, "Rendite": (rent_start/kp)*100,
@@ -346,45 +353,55 @@ else:
 
     res = calculate_investment(sel, OBJEKTE[sel])
     
-    # TABS FÜR 10 / 15 / 20 JAHRE
-    t10, t15, t20, t_all = st.tabs(["Plan 10 Jahre", "Plan 15 Jahre", "Plan 20 Jahre", "Gesamt-Tabelle"])
+    # 1. TOP KPIs: Miete/qm vs Markt
+    k1, k2, k3 = st.columns(3)
     
-    with t10:
-        d = res["Detail"][9] # Index 9 = Jahr 10
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Restschuld (10J)", f"{d['Restschuld']:,.0f} €")
-        c2.metric("Immo-Wert (10J)", f"{d['Immo-Wert']:,.0f} €")
-        c3.metric("Gewinn bei Verkauf", f"{d['Equity (Gewinn bei Verkauf)']:,.0f} €")
+    # Calc rent per sqm
+    rent_monthly = res["Params"]["Miete_Start"]
+    qm = res["Params"]["qm"]
+    miete_sqm = rent_monthly / qm if qm > 0 else 0
+    markt_sqm = res["Params"].get("Marktmiete_m2", 0)
+    
+    k1.metric("Ø Cashflow (10J)", f"{res['Avg_CF']:,.0f} €")
+    k2.metric("Miete/m² (Ist vs. Soll)", f"{miete_sqm:.2f} €", f"Markt: {markt_sqm:.2f} €")
+    k3.metric("Gewinn nach 10J", f"{res['Gewinn_10J']:,.0f} €")
+
+    # 2. HAUPT-TABELLE (10 JAHRE) - SOFORT SICHTBAR
+    st.subheader("📋 10-Jahres-Plan (Detail)")
+    df_full = pd.DataFrame(res["Detail"])
+    
+    # Nur die ersten 10 Jahre anzeigen + relevante Spalten
+    df_10 = df_full.head(10)[["Laufzeit", "Miete (p.a.)", "CF (vor Steuer)", "CF (nach Steuer)", "Restschuld", "Immo-Wert"]]
+    
+    st.dataframe(
+        df_10.style.format({
+            "Miete (p.a.)": "{:,.0f} €",
+            "CF (vor Steuer)": "{:,.0f} €",
+            "CF (nach Steuer)": "{:,.0f} €",
+            "Restschuld": "{:,.0f} €",
+            "Immo-Wert": "{:,.0f} €"
+        }),
+        use_container_width=True,
+        hide_index=True
+    )
+    
+    # 3. AUSBLICK 15 / 20 JAHRE (Darunter)
+    with st.expander("🔮 Ausblick: Jahr 15 & Jahr 20 ansehen"):
+        c_15, c_20 = st.columns(2)
         
-    with t15:
-        d = res["Detail"][14] # Index 14 = Jahr 15
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Restschuld (15J)", f"{d['Restschuld']:,.0f} €")
-        c2.metric("Immo-Wert (15J)", f"{d['Immo-Wert']:,.0f} €")
-        c3.metric("Gewinn bei Verkauf", f"{d['Equity (Gewinn bei Verkauf)']:,.0f} €")
-        
-    with t20:
-        d = res["Detail"][19] # Index 19 = Jahr 20
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Restschuld (20J)", f"{d['Restschuld']:,.0f} €")
-        c2.metric("Immo-Wert (20J)", f"{d['Immo-Wert']:,.0f} €")
-        c3.metric("Gewinn bei Verkauf", f"{d['Equity (Gewinn bei Verkauf)']:,.0f} €")
-        
-    with t_all:
-        df_plan = pd.DataFrame(res["Detail"])
-        # FIX: Formatierung über Dictionary, um "Laufzeit" (Text) nicht als Zahl zu formatieren!
-        st.dataframe(
-            df_plan[["Laufzeit", "Miete (p.a.)", "CF (netto)", "Restschuld", "Immo-Wert", "Equity (Gewinn bei Verkauf)"]]
-            .style.format({
-                "Miete (p.a.)": "{:,.0f} €",
-                "CF (netto)": "{:,.0f} €",
-                "Restschuld": "{:,.0f} €",
-                "Immo-Wert": "{:,.0f} €",
-                "Equity (Gewinn bei Verkauf)": "{:,.0f} €"
-            }),
-            use_container_width=True,
-            height=400
-        )
+        with c_15:
+            st.markdown("#### Jahr 15")
+            d15 = res["Detail"][14]
+            st.write(f"**Restschuld:** {d15['Restschuld']:,.0f} €")
+            st.write(f"**Immo-Wert:** {d15['Immo-Wert']:,.0f} €")
+            st.write(f"**Equity:** {d15['Equity']:,.0f} €")
+            
+        with c_20:
+            st.markdown("#### Jahr 20")
+            d20 = res["Detail"][19]
+            st.write(f"**Restschuld:** {d20['Restschuld']:,.0f} €")
+            st.write(f"**Immo-Wert:** {d20['Immo-Wert']:,.0f} €")
+            st.write(f"**Equity:** {d20['Equity']:,.0f} €")
 
     # ----------------------------------------------------
     # EDIT & UPLOAD AREA
