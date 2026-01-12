@@ -50,7 +50,7 @@ if not os.path.exists(MEDIA_DIR):
     os.makedirs(MEDIA_DIR)
 
 # ==========================================
-# 0. DATEN (DIE 4 SÄULEN - UPDATE NEU WULMSTORF)
+# 0. DATEN (DIE 4 SÄULEN - MIT BILDERN NEU WULMSTORF)
 # ==========================================
 DEFAULT_OBJEKTE = {
     "Meckelfeld (Cashflow-King)": {
@@ -77,13 +77,18 @@ DEFAULT_OBJEKTE = {
         "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
         "Miete_Start": 920, 
         "Hausgeld_Gesamt": 260, "Kosten_n_uml": 60, 
-        "Marktmiete_m2": 14.50, "Energie_Info": "Gas + Solar (Bj 2016), Klasse B (est.)",
-        "Status": "Frei ab 02/2026 (Provisionsfrei)",
-        "Link": "", 
-        "Bild_URLs": [], "PDF_Path": "",
-        "Basis_Info": """Baujahr 2016 bestätigt. 14 Einheiten. Provisionsfrei (LSB). Frei ab Feb 2026 -> Marktmiete.""",
+        "Marktmiete_m2": 14.50, "Energie_Info": "Gas + Solar (Bj 2016), Klasse B",
+        "Status": "Frei ab 02/2026 (Sofortige Neuvermietung)",
+        "Link": "https://www.kleinanzeigen.de/s-anzeige/moderne-2-zimmer-wohnung-inkl-aussenstellplatz-in-begehrter-lage/3296695424-196-2807", 
+        "Bild_URLs": [
+            "https://img.kleinanzeigen.de/api/v1/prod-ads/images/b8/b8d9237e-390c-4f6d-9420-a262fb63e7c4?rule=$_59.AUTO",
+            "https://img.kleinanzeigen.de/api/v1/prod-ads/images/44/44e6c91e-dcb6-4d18-b759-ec288cf895fc?rule=$_59.AUTO",
+            "https://img.kleinanzeigen.de/api/v1/prod-ads/images/c2/c2c20f6e-904f-43df-b3f6-815ae965458a?rule=$_59.AUTO",
+            "https://img.kleinanzeigen.de/api/v1/prod-ads/images/9d/9d538360-5d4e-4cac-92c3-f672fc0d3a5e?rule=$_59.AUTO"
+        ], "PDF_Path": "",
+        "Basis_Info": """Baujahr 2016 bestätigt. Leerstand ab 02/2026 -> Sofortige Neuvermietung (ca. 14€/m²). Provisionsfrei.""",
         "Summary_Case": """'Sorglos-Paket'. Wertsicherung durch moderne Substanz & günstigen Einkauf.""",
-        "Summary_Pros": """- PROVISIONSFREI (Invest < 18k).\n- Baujahr 2016 (Technik top, Gas+Solar).\n- Frei lieferbar (sofort 14€/qm).""",
+        "Summary_Pros": """- PROVISIONSFREI (Invest < 18k).\n- Baujahr 2016 (Gas+Solar).\n- Frei lieferbar (sofort 14€/qm).""",
         "Summary_Cons": """- Höchster Kaufpreis (249k).\n- Rendite ca. 4,4% (dafür sicher)."""
     },
     "Elmshorn (Terrasse & Staffel)": {
