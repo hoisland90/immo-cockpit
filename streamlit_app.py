@@ -51,7 +51,7 @@ if not os.path.exists(MEDIA_DIR):
     os.makedirs(MEDIA_DIR)
 
 # ==========================================
-# 0. DATEN (BEIDE ELMSHORN WOHNUNGEN)
+# 0. DATEN (NUR NOCH DIE 4 SÄULEN)
 # ==========================================
 DEFAULT_OBJEKTE = {
     "Meckelfeld (Cashflow-King)": {
@@ -70,40 +70,6 @@ DEFAULT_OBJEKTE = {
         "Summary_Pros": """- Provisionsfrei.\n- Fixe Mietsteigerung.\n- Hohe Rücklagen.""",
         "Summary_Cons": """- Energieklasse F.\n- Müllplatz-Umlage möglich."""
     },
-    "Elmshorn (Das Ursprüngliche 200k)": {
-        "Adresse": "Elmshorn (Lage unbekannt)", 
-        "qm": 70, "zimmer": 2.0, "bj": 1994,
-        "Kaufpreis": 200000, "Nebenkosten_Quote": 0.12, 
-        "Renovierung": 0, "Heizung_Puffer": 3000, 
-        "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
-        "Miete_Start": 600, 
-        "Hausgeld_Gesamt": 300, "Kosten_n_uml": 100, 
-        "Marktmiete_m2": 10.50, "Energie_Info": "Standard 1994",
-        "Status": "Vermietet",
-        "Link": "", 
-        "Bild_URLs": [], "PDF_Path": "",
-        "Basis_Info": """Das ursprüngliche Elmshorn-Objekt für 200k (Vergleichsobjekt).""",
-        "Summary_Case": """Günstigerer Einstieg, aber weniger Ausstattung?""",
-        "Summary_Pros": """- Günstiger Kaufpreis (200k).""",
-        "Summary_Cons": """- Weniger Infos vorhanden."""
-    },
-    "Elmshorn (Terrasse & Staffel 229k)": {
-        "Adresse": "Johannesstr. 24-28, 25335 Elmshorn", 
-        "qm": 75.67, "zimmer": 2.0, "bj": 1994,
-        "Kaufpreis": 229000, "Nebenkosten_Quote": 0.1207, # 6.5% GrESt + 2% Notar + 3.57% Makler
-        "Renovierung": 0, "Heizung_Puffer": 1000, # Reduziert da Heizung 2012 (C)
-        "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
-        "Miete_Start": 665, 
-        "Hausgeld_Gesamt": 370, "Kosten_n_uml": 165, 
-        "Marktmiete_m2": 11.00, "Energie_Info": "104,9 kWh (C), Gas Bj. 2012",
-        "Status": "Vermietet (Staffel 2026/27)",
-        "Link": "https://www.kleinanzeigen.de/s-anzeige/moderne-2-zimmer-wohnung-inkl-aussenstellplatz-in-begehrter-lage/3296695424-196-2807", 
-        "Bild_URLs": [], "PDF_Path": "",
-        "Basis_Info": """Staffelmiete: 2026 -> 765€, 2027 -> 815€. Heizung lt. Ausweis 2012 (Klasse C).""",
-        "Summary_Case": """Solides Investment mit eingebautem Rendite-Turbo (Staffel) und guter Substanz.""",
-        "Summary_Pros": """- Heizung Bj. 2012 (Energie C).\n- Miete steigt fix auf 815€ (2027).\n- Terrasse & TG.""",
-        "Summary_Cons": """- Hohes Hausgeld (Rücklagen).\n- Nachtrag zur Miete noch einzuholen."""
-    },
     "Neu Wulmstorf (Neubau-Anker)": {
         "Adresse": "Hauptstraße, 21629 Neu Wulmstorf", 
         "qm": 65.79, "zimmer": 2.0, "bj": 2016,
@@ -120,6 +86,23 @@ DEFAULT_OBJEKTE = {
         "Summary_Case": """'Sorglos-Paket'. Wertsicherung durch moderne Substanz & günstigen Einkauf.""",
         "Summary_Pros": """- PROVISIONSFREI (Invest < 18k).\n- Baujahr 2016 (Technik top).\n- Frei lieferbar (sofort 14€/qm).""",
         "Summary_Cons": """- Höchster Kaufpreis (249k).\n- Rendite ca. 4,4% (dafür sicher)."""
+    },
+    "Elmshorn (Terrasse & Staffel)": {
+        "Adresse": "Johannesstr. 24-28, 25335 Elmshorn", 
+        "qm": 75.67, "zimmer": 2.0, "bj": 1994,
+        "Kaufpreis": 229000, "Nebenkosten_Quote": 0.1207, # 6.5% GrESt + 2% Notar + 3.57% Makler
+        "Renovierung": 0, "Heizung_Puffer": 1000, # Reduziert da Heizung 2012 (C)
+        "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
+        "Miete_Start": 665, 
+        "Hausgeld_Gesamt": 370, "Kosten_n_uml": 165, 
+        "Marktmiete_m2": 11.00, "Energie_Info": "104,9 kWh (C), Gas Bj. 2012",
+        "Status": "Vermietet (Staffel 2026/27)",
+        "Link": "https://www.kleinanzeigen.de/s-anzeige/moderne-2-zimmer-wohnung-inkl-aussenstellplatz-in-begehrter-lage/3296695424-196-2807", 
+        "Bild_URLs": [], "PDF_Path": "",
+        "Basis_Info": """Staffelmiete: 2026 -> 765€, 2027 -> 815€. Heizung lt. Ausweis 2012 (Klasse C).""",
+        "Summary_Case": """Solides Investment mit eingebautem Rendite-Turbo (Staffel) und guter Substanz.""",
+        "Summary_Pros": """- Heizung Bj. 2012 (Energie C).\n- Miete steigt fix auf 815€ (2027).\n- Terrasse & TG.""",
+        "Summary_Cons": """- Hohes Hausgeld (Rücklagen).\n- Nachtrag zur Miete noch einzuholen."""
     },
     "Harburg (Maisonette/Lifestyle)": {
         "Adresse": "Marienstr. 52, 21073 Hamburg", 
@@ -143,9 +126,11 @@ def load_data():
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
-            # Logik: Wir behalten ALLE Objekte aus der JSON (falls du schon Änderungen gemacht hast)
-            # Und stellen sicher, dass die neuen Default-Objekte (Elmshorn Neu & Alt) da sind
-            merged = data.copy()
+            # Logik: Filtern! Wir behalten nur Objekte, die in DEFAULT_OBJEKTE stehen.
+            # Alles andere (z.B. Brackel, Eißendorf, altes Elmshorn) wird gelöscht.
+            merged = {k: v for k, v in data.items() if k in DEFAULT_OBJEKTE}
+            
+            # Falls neue Defaults dazu kamen (oder Reset), auffüllen
             for k, v in DEFAULT_OBJEKTE.items():
                 if k not in merged:
                     merged[k] = v
@@ -213,8 +198,9 @@ def calculate_investment(obj_name, params):
     loan = kp
     rate_pa = loan * (zins + global_tilgung)
     
-    # Spezielle Logik nur für die NEUE Elmshorn Wohnung (mit Staffel)
-    is_elmshorn_neu = "Terrasse & Staffel" in obj_name
+    # Spezielle Logik für Elmshorn (Staffel)
+    # Da wir nur noch EIN Elmshorn haben, prüfen wir auf "Elmshorn" im Namen
+    is_elmshorn_staffel = "Elmshorn" in obj_name and "Terrasse" in obj_name
     rent_start = params["Miete_Start"] * 12
     
     data = []
@@ -224,7 +210,7 @@ def calculate_investment(obj_name, params):
     for i in range(20):
         jahr = START_JAHR + i
         
-        if is_elmshorn_neu:
+        if is_elmshorn_staffel:
             # Staffel: 2026=9180 (765), 2027=9780 (815), danach Steigerung
             if jahr == 2026: 
                 rent_yr = 9180 
