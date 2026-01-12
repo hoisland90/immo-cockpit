@@ -291,20 +291,63 @@ else:
     obj_data = OBJEKTE[sel]
     
     # ----------------------------------------------------
-    # STECKBRIEF
+    # STECKBRIEF (INKL. INVEST-BERECHNUNG)
     # ----------------------------------------------------
     st.markdown("### 📍 Objekt-Steckbrief")
+    
+    # KAUFPREIS & NK BERECHNUNG FÜR HERLEITUNG
+    kp_val = obj_data["Kaufpreis"]
+    nk_quote = obj_data["Nebenkosten_Quote"]
+    
+    # Logik für NK-Herleitung basierend auf Bundesland-Schätzung
+    addr = obj_data.get("Adresse", "").lower()
+    if "hamburg" in addr:
+        grest_proz = 5.5
+    elif "elmshorn" in addr: # Schleswig-Holstein
+        grest_proz = 6.5
+    else: # Default Niedersachsen (Meckelfeld/Neu Wulmstorf)
+        grest_proz = 5.0
+        
+    notar_proz = 2.0
+    makler_proz = (nk_quote * 100) - grest_proz - notar_proz
+    if makler_proz < 0: makler_proz = 0 # Fallback
+    
+    nk_wert = kp_val * nk_quote
+    reno_wert = obj_data.get("Renovierung", 0)
+    puffer_wert = obj_data.get("Heizung_Puffer", 0)
+    invest_ek = nk_wert + reno_wert + puffer_wert
+
     with st.container(border=True):
         c_prof1, c_prof2 = st.columns(2)
         with c_prof1:
             st.markdown(f"**🏠 Adresse:** {obj_data.get('Adresse', 'n.v.')}")
             st.markdown(f"**📏 Größe:** {obj_data['qm']} m² | {obj_data['zimmer']} Zi.")
             st.markdown(f"**📅 Baujahr:** {obj_data['bj']}")
-        with c_prof2:
             st.markdown(f"**⚡ Energie:** {obj_data.get('Energie_Info', 'n.v.')}")
+        with c_prof2:
             st.markdown(f"**💶 Hausgeld:** {obj_data.get('Hausgeld_Gesamt', 0)} €")
             st.markdown(f"**🔑 Status:** {obj_data.get('Status', 'n.v.')}")
-    
+        
+        st.markdown("---")
+        # DER NEUE INVEST-BLOCK
+        c_inv1, c_inv2 = st.columns([1, 2])
+        with c_inv1:
+            st.metric("💸 Invest (Eigenkapital)", f"{invest_ek:,.0f} €", help="Summe aus Kaufnebenkosten, Renovierung und Puffer")
+        with c_inv2:
+            with st.expander("ℹ️ Herleitung (100% Finanzierung) ansehen"):
+                st.markdown(f"""
+                **Kaufpreis:** {kp_val:,.0f} € (wird zu 100% finanziert)  
+                
+                **Cash-Bedarf (EK):**
+                * Grunderwerbsteuer ({grest_proz}%): {kp_val*(grest_proz/100):,.0f} €
+                * Notar & Gericht (ca. {notar_proz}%): {kp_val*(notar_proz/100):,.0f} €
+                * Makler ({makler_proz:.2f}%): {kp_val*(makler_proz/100):,.0f} €
+                * + Renovierung: {reno_wert:,.0f} €
+                * + Puffer: {puffer_wert:,.0f} €
+                
+                **= {invest_ek:,.0f} €**
+                """)
+
     if obj_data.get("Basis_Info"):
         st.info(f"ℹ️ **Info:** {obj_data['Basis_Info']}")
 
@@ -427,7 +470,6 @@ else:
         n_pros = st.text_area("Pros", value=obj_data.get("Summary_Pros", ""))
         n_cons = st.text_area("Cons", value=obj_data.get("Summary_Cons", ""))
         
-        # Zeile korrigiert - Klammern sauber geschlossen!
         n_imgs = st.text_area("Bild-URLs (eine pro Zeile)", value="\n".join(obj_data.get("Bild_URLs", [])))
         
         if st.button("💾 Änderungen Speichern"):
