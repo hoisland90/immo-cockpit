@@ -372,9 +372,16 @@ else:
         
     with t_all:
         df_plan = pd.DataFrame(res["Detail"])
+        # FIX: Formatierung über Dictionary, um "Laufzeit" (Text) nicht als Zahl zu formatieren!
         st.dataframe(
             df_plan[["Laufzeit", "Miete (p.a.)", "CF (netto)", "Restschuld", "Immo-Wert", "Equity (Gewinn bei Verkauf)"]]
-            .style.format("{:,.0f} €"),
+            .style.format({
+                "Miete (p.a.)": "{:,.0f} €",
+                "CF (netto)": "{:,.0f} €",
+                "Restschuld": "{:,.0f} €",
+                "Immo-Wert": "{:,.0f} €",
+                "Equity (Gewinn bei Verkauf)": "{:,.0f} €"
+            }),
             use_container_width=True,
             height=400
         )
@@ -391,7 +398,6 @@ else:
         n_miete = c_e2.number_input("Start-Miete", value=float(obj_data["Miete_Start"]))
         n_qm = c_e3.number_input("Wohnfläche", value=float(obj_data["qm"]))
         
-        # HIER IST DAS NEUE LINK-FELD
         n_link = st.text_input("Link zum Inserat", value=obj_data.get("Link", ""))
         
         n_case = st.text_area("Investment Case", value=obj_data.get("Summary_Case", ""))
