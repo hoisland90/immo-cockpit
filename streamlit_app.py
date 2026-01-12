@@ -50,7 +50,7 @@ if not os.path.exists(MEDIA_DIR):
     os.makedirs(MEDIA_DIR)
 
 # ==========================================
-# 0. DATEN (DIE 4 SÄULEN)
+# 0. DATEN (DIE 4 SÄULEN - UPDATE NEU WULMSTORF)
 # ==========================================
 DEFAULT_OBJEKTE = {
     "Meckelfeld (Cashflow-King)": {
@@ -70,20 +70,20 @@ DEFAULT_OBJEKTE = {
         "Summary_Cons": """- Energieklasse F.\n- Müllplatz-Umlage möglich."""
     },
     "Neu Wulmstorf (Neubau-Anker)": {
-        "Adresse": "Hauptstraße, 21629 Neu Wulmstorf", 
+        "Adresse": "Hauptstraße 43, 21629 Neu Wulmstorf", 
         "qm": 65.79, "zimmer": 2.0, "bj": 2016,
         "Kaufpreis": 249000, "Nebenkosten_Quote": 0.07, 
         "Renovierung": 0, "Heizung_Puffer": 0, 
         "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
         "Miete_Start": 920, 
         "Hausgeld_Gesamt": 260, "Kosten_n_uml": 60, 
-        "Marktmiete_m2": 14.50, "Energie_Info": "Energieeffizient (Bj 2016), Fußbodenhzg.",
-        "Status": "Frei ab 02/2026 (Sofortige Neuvermietung)",
+        "Marktmiete_m2": 14.50, "Energie_Info": "Gas + Solar (Bj 2016), Klasse B (est.)",
+        "Status": "Frei ab 02/2026 (Provisionsfrei)",
         "Link": "", 
         "Bild_URLs": [], "PDF_Path": "",
-        "Basis_Info": """Sicherheits-Baustein. Baujahr 2016. Privatverkauf (ohne Makler). Frei ab Februar -> Marktmiete.""",
+        "Basis_Info": """Baujahr 2016 bestätigt. 14 Einheiten. Provisionsfrei (LSB). Frei ab Feb 2026 -> Marktmiete.""",
         "Summary_Case": """'Sorglos-Paket'. Wertsicherung durch moderne Substanz & günstigen Einkauf.""",
-        "Summary_Pros": """- PROVISIONSFREI (Invest < 18k).\n- Baujahr 2016 (Technik top).\n- Frei lieferbar (sofort 14€/qm).""",
+        "Summary_Pros": """- PROVISIONSFREI (Invest < 18k).\n- Baujahr 2016 (Technik top, Gas+Solar).\n- Frei lieferbar (sofort 14€/qm).""",
         "Summary_Cons": """- Höchster Kaufpreis (249k).\n- Rendite ca. 4,4% (dafür sicher)."""
     },
     "Elmshorn (Terrasse & Staffel)": {
@@ -353,7 +353,7 @@ else:
 
     res = calculate_investment(sel, OBJEKTE[sel])
     
-    # 1. TOP KPIs: 4 SPALTEN (Miete, EKR, Miete/qm, Gewinn)
+    # 1. TOP KPIs: 4 SPALTEN (Cashflow, EKR, Miete/qm, Gewinn)
     k1, k2, k3, k4 = st.columns(4)
     
     # Calc rent per sqm
@@ -367,7 +367,7 @@ else:
     k3.metric("Miete/m² (Ist vs. Soll)", f"{miete_sqm:.2f} €", f"Markt: {markt_sqm:.2f} €")
     k4.metric("Gewinn nach 10J", f"{res['Gewinn_10J']:,.0f} €")
 
-    # 2. HAUPT-TABELLE (10 JAHRE) - SOFORT SICHTBAR
+    # 2. HAUPT-TABELLE (10 JAHRE)
     st.subheader("📋 10-Jahres-Plan (Detail)")
     df_full = pd.DataFrame(res["Detail"])
     
@@ -386,7 +386,7 @@ else:
         hide_index=True
     )
     
-    # 3. AUSBLICK 15 / 20 JAHRE (Darunter)
+    # 3. AUSBLICK 15 / 20 JAHRE
     with st.expander("🔮 Ausblick: Jahr 15 & Jahr 20 ansehen"):
         c_15, c_20 = st.columns(2)
         
