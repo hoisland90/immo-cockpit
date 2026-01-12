@@ -50,7 +50,7 @@ if not os.path.exists(MEDIA_DIR):
     os.makedirs(MEDIA_DIR)
 
 # ==========================================
-# 0. DATEN (DIE 4 SÄULEN - UPDATE NEU WULMSTORF CONS)
+# 0. DATEN (DIE 4 SÄULEN - MIT BILDERN NEU WULMSTORF)
 # ==========================================
 DEFAULT_OBJEKTE = {
     "Meckelfeld (Cashflow-King)": {
@@ -427,4 +427,28 @@ else:
         n_pros = st.text_area("Pros", value=obj_data.get("Summary_Pros", ""))
         n_cons = st.text_area("Cons", value=obj_data.get("Summary_Cons", ""))
         
-        n_imgs = st.text_area("Bild-URLs (eine pro Zeile)", value="\n".join(
+        # Zeile korrigiert - Klammern sauber geschlossen!
+        n_imgs = st.text_area("Bild-URLs (eine pro Zeile)", value="\n".join(obj_data.get("Bild_URLs", [])))
+        
+        if st.button("💾 Änderungen Speichern"):
+            OBJEKTE[sel].update({
+                "Kaufpreis": n_kp, "Miete_Start": n_miete, "qm": n_qm, "Link": n_link,
+                "Summary_Case": n_case, "Summary_Pros": n_pros, "Summary_Cons": n_cons,
+                "Bild_URLs": [x.strip() for x in n_imgs.split("\n") if x.strip()]
+            })
+            save_data(OBJEKTE)
+            st.success("Gespeichert!")
+            st.rerun()
+
+    with st.expander("📤 Dateien hochladen (PDF & Bild)", expanded=False):
+        uploaded_pdf = st.file_uploader("Exposé PDF hochladen", type="pdf")
+        if uploaded_pdf:
+            safe_name = "".join([c for c in sel if c.isalnum()]) + ".pdf"
+            save_path = os.path.join(MEDIA_DIR, safe_name)
+            with open(save_path, "wb") as f: f.write(uploaded_pdf.getbuffer())
+            OBJEKTE[sel]["PDF_Path"] = save_path
+            save_data(OBJEKTE)
+            st.success("PDF gespeichert!")
+            st.rerun()
+            
+    st.sidebar.download_button("📄 Exposé PDF erstellen", create_pdf_expose(sel, obj_data, res), f"Expose_{sel}.pdf")
