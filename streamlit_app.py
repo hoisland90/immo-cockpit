@@ -6,6 +6,7 @@ import tempfile
 import json
 import os
 import shutil
+import datetime
 
 # ==========================================
 # 0. SICHERHEIT / LOGIN
@@ -34,7 +35,7 @@ def check_password():
         return True
 
 # ==========================================
-# KONFIGURATION
+# KONFIGURATION & SETUP
 # ==========================================
 st.set_page_config(page_title="Immo-Cockpit Pro", layout="wide", initial_sidebar_state="expanded")
 
@@ -51,7 +52,7 @@ if not os.path.exists(MEDIA_DIR):
     os.makedirs(MEDIA_DIR)
 
 # ==========================================
-# 0. DATEN (KORRIGIERT & AKTUELL)
+# 0. DATEN (DAS 4-SÄULEN PORTFOLIO - AKTUELL)
 # ==========================================
 DEFAULT_OBJEKTE = {
     "Meckelfeld (Cashflow-King)": {
@@ -82,7 +83,7 @@ DEFAULT_OBJEKTE = {
         "Status": "Vermietet (Staffel 2026/27)",
         "Link": "https://www.kleinanzeigen.de/s-anzeige/moderne-2-zimmer-wohnung-inkl-aussenstellplatz-in-begehrter-lage/3296695424-196-2807", 
         "Bild_URLs": [], "PDF_Path": "",
-        "Basis_Info": """Staffelmiete (im Exposé zugesichert): 2026 -> 765€, 2027 -> 815€. Heizung lt. Ausweis 2012 (C).""",
+        "Basis_Info": """Staffelmiete: 2026 -> 765€, 2027 -> 815€. Heizung lt. Ausweis 2012 (Klasse C).""",
         "Summary_Case": """Solides Investment mit eingebautem Rendite-Turbo (Staffel) und guter Substanz.""",
         "Summary_Pros": """- Heizung Bj. 2012 (Energie C).\n- Miete steigt fix auf 815€ (2027).\n- Terrasse & TG.""",
         "Summary_Cons": """- Hohes Hausgeld (Rücklagen).\n- Nachtrag zur Miete noch einzuholen."""
@@ -126,12 +127,13 @@ def load_data():
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
+            # Logik: Nur gewünschte Objekte behalten, aber User-Änderungen an diesen Objekten schützen
             merged = {k: v for k, v in data.items() if k in DEFAULT_OBJEKTE} 
             for k, v in DEFAULT_OBJEKTE.items():
                 if k not in merged:
                     merged[k] = v
                 else:
-                    # Update Logik für Elmshorn, falls alte Daten geladen werden
+                    # Fix für Elmshorn, falls noch der alte Kaufpreis (200k) drin steht
                     if "Elmshorn" in k and merged[k]["Kaufpreis"] < 210000:
                          merged[k] = v
             return merged
@@ -172,6 +174,14 @@ def create_pdf_expose(obj_name, data, res):
     pdf.multi_cell(0, 6, f"Pros: {clean_text(data.get('Summary_Pros'))}")
     pdf.ln(2)
     pdf.multi_cell(0, 6, f"Risiken: {clean_text(data.get('Summary_Cons'))}")
+    
+    if data.get("Lage_Beschreibung"):
+        pdf.ln(5)
+        pdf.set_font('Arial', 'B', 11)
+        pdf.cell(0, 6, "Lage & Umgebung:", 0, 1)
+        pdf.set_font('Arial', '', 10)
+        pdf.multi_cell(0, 6, f"{clean_text(data.get('Lage_Beschreibung'))}")
+
     return pdf.output(dest='S').encode('latin-1', 'replace')
 
 # ==========================================
@@ -198,6 +208,7 @@ def calculate_investment(obj_name, params):
     loan = kp
     rate_pa = loan * (zins + global_tilgung)
     
+    # Spezielle Logik für Elmshorn Staffel
     is_elmshorn = "Elmshorn" in obj_name
     rent_start = params["Miete_Start"] * 12
     
@@ -209,10 +220,16 @@ def calculate_investment(obj_name, params):
         jahr = START_JAHR + i
         
         if is_elmshorn:
-            if jahr == 2026: rent_yr = 9180 
-            elif jahr == 2027: rent_yr = 9780 
-            elif jahr > 2027: rent_yr = 9780 * (1 + miet_st)**(i - 2) 
-            else: rent_yr = rent_start 
+            # Staffel: 2026=9180 (765), 2027=9780 (815), danach Steigerung
+            if jahr == 2026: 
+                rent_yr = 9180 
+            elif jahr == 2027: 
+                rent_yr = 9780 
+            elif jahr > 2027:
+                # Ab 2028 normale Steigerung auf Basis 2027
+                rent_yr = 9780 * (1 + miet_st)**(i - 2) 
+            else: 
+                rent_yr = rent_start # Fallback 2025
         else:
             rent_yr = rent_start * (1 + miet_st)**i
             
@@ -273,7 +290,7 @@ else:
     obj_data = OBJEKTE[sel]
     
     # ----------------------------------------------------
-    # STECKBRIEF (Wiederhergestellt!)
+    # STECKBRIEF (VOLLE FUNKTION)
     # ----------------------------------------------------
     st.markdown("### 📍 Objekt-Steckbrief")
     with st.container(border=True):
@@ -291,7 +308,7 @@ else:
         st.info(f"ℹ️ **Info:** {obj_data['Basis_Info']}")
 
     # ----------------------------------------------------
-    # DATEIEN & BILDER (Wiederhergestellt!)
+    # LINKS & UPLOADS
     # ----------------------------------------------------
     c_link, c_pdf = st.columns(2)
     url = obj_data.get("Link", "")
@@ -303,7 +320,7 @@ else:
         with open(pdf_path, "rb") as f:
             c_pdf.download_button("📄 Exposé PDF", f, file_name=os.path.basename(pdf_path), use_container_width=True)
     else:
-        c_pdf.warning("Kein PDF hinterlegt")
+        c_pdf.warning("Kein PDF hinterlegt (Upload unten)")
 
     img_urls = obj_data.get("Bild_URLs", [])
     if img_urls:
@@ -315,7 +332,7 @@ else:
                 st.image(u, use_container_width=True)
 
     # ----------------------------------------------------
-    # KPI & SIMULATION
+    # KPI & LIVE-CALC
     # ----------------------------------------------------
     st.markdown("---")
     st.header("📊 Core KPIs (Live-Calc)")
@@ -348,7 +365,7 @@ else:
     k3.metric("Gewinn nach 10J", f"{res['Gewinn_10J']:,.0f} €")
 
     # ----------------------------------------------------
-    # EDITIER-BEREICH (Komplett Wiederhergestellt!)
+    # EDIT & UPLOAD AREA (Wiederhergestellt!)
     # ----------------------------------------------------
     st.markdown("---")
     st.header("⚙️ Daten & Uploads")
