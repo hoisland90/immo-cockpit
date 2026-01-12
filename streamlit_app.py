@@ -6,7 +6,6 @@ import tempfile
 import json
 import os
 import shutil
-import datetime
 
 # ==========================================
 # 0. SICHERHEIT / LOGIN
@@ -52,7 +51,7 @@ if not os.path.exists(MEDIA_DIR):
     os.makedirs(MEDIA_DIR)
 
 # ==========================================
-# 0. DATEN (DAS 4-SÄULEN PORTFOLIO - AKTUELL)
+# 0. DATEN (BEIDE ELMSHORN WOHNUNGEN)
 # ==========================================
 DEFAULT_OBJEKTE = {
     "Meckelfeld (Cashflow-King)": {
@@ -71,7 +70,24 @@ DEFAULT_OBJEKTE = {
         "Summary_Pros": """- Provisionsfrei.\n- Fixe Mietsteigerung.\n- Hohe Rücklagen.""",
         "Summary_Cons": """- Energieklasse F.\n- Müllplatz-Umlage möglich."""
     },
-    "Elmshorn (Terrasse & Staffel)": {
+    "Elmshorn (Das Ursprüngliche 200k)": {
+        "Adresse": "Elmshorn (Lage unbekannt)", 
+        "qm": 70, "zimmer": 2.0, "bj": 1994,
+        "Kaufpreis": 200000, "Nebenkosten_Quote": 0.12, 
+        "Renovierung": 0, "Heizung_Puffer": 3000, 
+        "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
+        "Miete_Start": 600, 
+        "Hausgeld_Gesamt": 300, "Kosten_n_uml": 100, 
+        "Marktmiete_m2": 10.50, "Energie_Info": "Standard 1994",
+        "Status": "Vermietet",
+        "Link": "", 
+        "Bild_URLs": [], "PDF_Path": "",
+        "Basis_Info": """Das ursprüngliche Elmshorn-Objekt für 200k (Vergleichsobjekt).""",
+        "Summary_Case": """Günstigerer Einstieg, aber weniger Ausstattung?""",
+        "Summary_Pros": """- Günstiger Kaufpreis (200k).""",
+        "Summary_Cons": """- Weniger Infos vorhanden."""
+    },
+    "Elmshorn (Terrasse & Staffel 229k)": {
         "Adresse": "Johannesstr. 24-28, 25335 Elmshorn", 
         "qm": 75.67, "zimmer": 2.0, "bj": 1994,
         "Kaufpreis": 229000, "Nebenkosten_Quote": 0.1207, # 6.5% GrESt + 2% Notar + 3.57% Makler
@@ -127,15 +143,12 @@ def load_data():
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
-            # Logik: Nur gewünschte Objekte behalten, aber User-Änderungen an diesen Objekten schützen
-            merged = {k: v for k, v in data.items() if k in DEFAULT_OBJEKTE} 
+            # Logik: Wir behalten ALLE Objekte aus der JSON (falls du schon Änderungen gemacht hast)
+            # Und stellen sicher, dass die neuen Default-Objekte (Elmshorn Neu & Alt) da sind
+            merged = data.copy()
             for k, v in DEFAULT_OBJEKTE.items():
                 if k not in merged:
                     merged[k] = v
-                else:
-                    # Fix für Elmshorn, falls noch der alte Kaufpreis (200k) drin steht
-                    if "Elmshorn" in k and merged[k]["Kaufpreis"] < 210000:
-                         merged[k] = v
             return merged
     return DEFAULT_OBJEKTE
 
@@ -174,14 +187,6 @@ def create_pdf_expose(obj_name, data, res):
     pdf.multi_cell(0, 6, f"Pros: {clean_text(data.get('Summary_Pros'))}")
     pdf.ln(2)
     pdf.multi_cell(0, 6, f"Risiken: {clean_text(data.get('Summary_Cons'))}")
-    
-    if data.get("Lage_Beschreibung"):
-        pdf.ln(5)
-        pdf.set_font('Arial', 'B', 11)
-        pdf.cell(0, 6, "Lage & Umgebung:", 0, 1)
-        pdf.set_font('Arial', '', 10)
-        pdf.multi_cell(0, 6, f"{clean_text(data.get('Lage_Beschreibung'))}")
-
     return pdf.output(dest='S').encode('latin-1', 'replace')
 
 # ==========================================
@@ -208,8 +213,8 @@ def calculate_investment(obj_name, params):
     loan = kp
     rate_pa = loan * (zins + global_tilgung)
     
-    # Spezielle Logik für Elmshorn Staffel
-    is_elmshorn = "Elmshorn" in obj_name
+    # Spezielle Logik nur für die NEUE Elmshorn Wohnung (mit Staffel)
+    is_elmshorn_neu = "Terrasse & Staffel" in obj_name
     rent_start = params["Miete_Start"] * 12
     
     data = []
@@ -219,17 +224,16 @@ def calculate_investment(obj_name, params):
     for i in range(20):
         jahr = START_JAHR + i
         
-        if is_elmshorn:
+        if is_elmshorn_neu:
             # Staffel: 2026=9180 (765), 2027=9780 (815), danach Steigerung
             if jahr == 2026: 
                 rent_yr = 9180 
             elif jahr == 2027: 
                 rent_yr = 9780 
             elif jahr > 2027:
-                # Ab 2028 normale Steigerung auf Basis 2027
                 rent_yr = 9780 * (1 + miet_st)**(i - 2) 
             else: 
-                rent_yr = rent_start # Fallback 2025
+                rent_yr = rent_start
         else:
             rent_yr = rent_start * (1 + miet_st)**i
             
@@ -290,7 +294,7 @@ else:
     obj_data = OBJEKTE[sel]
     
     # ----------------------------------------------------
-    # STECKBRIEF (VOLLE FUNKTION)
+    # STECKBRIEF
     # ----------------------------------------------------
     st.markdown("### 📍 Objekt-Steckbrief")
     with st.container(border=True):
@@ -365,7 +369,7 @@ else:
     k3.metric("Gewinn nach 10J", f"{res['Gewinn_10J']:,.0f} €")
 
     # ----------------------------------------------------
-    # EDIT & UPLOAD AREA (Wiederhergestellt!)
+    # EDIT & UPLOAD AREA
     # ----------------------------------------------------
     st.markdown("---")
     st.header("⚙️ Daten & Uploads")
