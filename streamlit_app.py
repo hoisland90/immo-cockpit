@@ -50,7 +50,7 @@ if not os.path.exists(MEDIA_DIR):
     os.makedirs(MEDIA_DIR)
 
 # ==========================================
-# 0. DATEN (DIE 4 SÄULEN - MIT BILDERN NEU WULMSTORF)
+# 0. DATEN (DIE 4 SÄULEN - UPDATE NEU WULMSTORF CONS)
 # ==========================================
 DEFAULT_OBJEKTE = {
     "Meckelfeld (Cashflow-King)": {
@@ -77,8 +77,8 @@ DEFAULT_OBJEKTE = {
         "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
         "Miete_Start": 920, 
         "Hausgeld_Gesamt": 260, "Kosten_n_uml": 60, 
-        "Marktmiete_m2": 14.50, "Energie_Info": "Gas + Solar (Bj 2016), Klasse B",
-        "Status": "Frei ab 02/2026 (Sofortige Neuvermietung)",
+        "Marktmiete_m2": 14.50, "Energie_Info": "Gas + Solar (Bj 2016), Klasse B (est.)",
+        "Status": "Frei ab 02/2026 (Provisionsfrei)",
         "Link": "https://www.kleinanzeigen.de/s-anzeige/moderne-2-zimmer-wohnung-inkl-aussenstellplatz-in-begehrter-lage/3296695424-196-2807", 
         "Bild_URLs": [
             "https://img.kleinanzeigen.de/api/v1/prod-ads/images/b8/b8d9237e-390c-4f6d-9420-a262fb63e7c4?rule=$_59.AUTO",
@@ -86,10 +86,10 @@ DEFAULT_OBJEKTE = {
             "https://img.kleinanzeigen.de/api/v1/prod-ads/images/c2/c2c20f6e-904f-43df-b3f6-815ae965458a?rule=$_59.AUTO",
             "https://img.kleinanzeigen.de/api/v1/prod-ads/images/9d/9d538360-5d4e-4cac-92c3-f672fc0d3a5e?rule=$_59.AUTO"
         ], "PDF_Path": "",
-        "Basis_Info": """Baujahr 2016 bestätigt. Leerstand ab 02/2026 -> Sofortige Neuvermietung (ca. 14€/m²). Provisionsfrei.""",
+        "Basis_Info": """Baujahr 2016 bestätigt. 14 Einheiten. Frei ab Feb 2026. LAGE: Direkt an B73 (laut!).""",
         "Summary_Case": """'Sorglos-Paket'. Wertsicherung durch moderne Substanz & günstigen Einkauf.""",
-        "Summary_Pros": """- PROVISIONSFREI (Invest < 18k).\n- Baujahr 2016 (Gas+Solar).\n- Frei lieferbar (sofort 14€/qm).""",
-        "Summary_Cons": """- Höchster Kaufpreis (249k).\n- Rendite ca. 4,4% (dafür sicher)."""
+        "Summary_Pros": """- PROVISIONSFREI (Invest < 18k).\n- Baujahr 2016 (Technik top, Gas+Solar).\n- Frei lieferbar (sofort 14€/qm).""",
+        "Summary_Cons": """- LAGE AN B73 (Lärm/Emissionen).\n- Höchster Kaufpreis (249k).\n- Rendite ca. 4,4%."""
     },
     "Elmshorn (Terrasse & Staffel)": {
         "Adresse": "Johannesstr. 24-28, 25335 Elmshorn", 
@@ -427,27 +427,4 @@ else:
         n_pros = st.text_area("Pros", value=obj_data.get("Summary_Pros", ""))
         n_cons = st.text_area("Cons", value=obj_data.get("Summary_Cons", ""))
         
-        n_imgs = st.text_area("Bild-URLs (eine pro Zeile)", value="\n".join(obj_data.get("Bild_URLs", [])))
-        
-        if st.button("💾 Änderungen Speichern"):
-            OBJEKTE[sel].update({
-                "Kaufpreis": n_kp, "Miete_Start": n_miete, "qm": n_qm, "Link": n_link,
-                "Summary_Case": n_case, "Summary_Pros": n_pros, "Summary_Cons": n_cons,
-                "Bild_URLs": [x.strip() for x in n_imgs.split("\n") if x.strip()]
-            })
-            save_data(OBJEKTE)
-            st.success("Gespeichert!")
-            st.rerun()
-
-    with st.expander("📤 Dateien hochladen (PDF & Bild)", expanded=False):
-        uploaded_pdf = st.file_uploader("Exposé PDF hochladen", type="pdf")
-        if uploaded_pdf:
-            safe_name = "".join([c for c in sel if c.isalnum()]) + ".pdf"
-            save_path = os.path.join(MEDIA_DIR, safe_name)
-            with open(save_path, "wb") as f: f.write(uploaded_pdf.getbuffer())
-            OBJEKTE[sel]["PDF_Path"] = save_path
-            save_data(OBJEKTE)
-            st.success("PDF gespeichert!")
-            st.rerun()
-            
-    st.sidebar.download_button("📄 Exposé PDF erstellen", create_pdf_expose(sel, obj_data, res), f"Expose_{sel}.pdf")
+        n_imgs = st.text_area("Bild-URLs (eine pro Zeile)", value="\n".join(
