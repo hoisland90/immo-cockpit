@@ -353,8 +353,8 @@ else:
 
     res = calculate_investment(sel, OBJEKTE[sel])
     
-    # 1. TOP KPIs: Miete/qm vs Markt
-    k1, k2, k3 = st.columns(3)
+    # 1. TOP KPIs: 4 SPALTEN (Miete, EKR, Miete/qm, Gewinn)
+    k1, k2, k3, k4 = st.columns(4)
     
     # Calc rent per sqm
     rent_monthly = res["Params"]["Miete_Start"]
@@ -362,9 +362,10 @@ else:
     miete_sqm = rent_monthly / qm if qm > 0 else 0
     markt_sqm = res["Params"].get("Marktmiete_m2", 0)
     
-    k1.metric("Ø Cashflow (10J)", f"{res['Avg_CF']:,.0f} €")
-    k2.metric("Miete/m² (Ist vs. Soll)", f"{miete_sqm:.2f} €", f"Markt: {markt_sqm:.2f} €")
-    k3.metric("Gewinn nach 10J", f"{res['Gewinn_10J']:,.0f} €")
+    k1.metric("Ø Monatl. Cashflow (10 Jahre)", f"{res['Avg_CF']:,.0f} €")
+    k2.metric("EKR (Eigenkapitalrendite 10J)", f"{res['CAGR']:.2f} %")
+    k3.metric("Miete/m² (Ist vs. Soll)", f"{miete_sqm:.2f} €", f"Markt: {markt_sqm:.2f} €")
+    k4.metric("Gewinn nach 10J", f"{res['Gewinn_10J']:,.0f} €")
 
     # 2. HAUPT-TABELLE (10 JAHRE) - SOFORT SICHTBAR
     st.subheader("📋 10-Jahres-Plan (Detail)")
