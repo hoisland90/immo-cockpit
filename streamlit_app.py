@@ -40,18 +40,17 @@ st.set_page_config(page_title="Immo-Cockpit Pro", layout="wide", initial_sidebar
 
 if not check_password(): st.stop()
 
-# Design-Fix für Selectboxen
 st.markdown("""<style>div[data-baseweb="select"] > div {border-color: #808495 !important; border-width: 1px !important;}</style>""", unsafe_allow_html=True)
 
 START_JAHR = 2026
 DATA_FILE = "portfolio_data_final.json"
-MEDIA_DIR = "expose_files" # Speicherort für PDFs und Bilder
+MEDIA_DIR = "expose_files"
 
 if not os.path.exists(MEDIA_DIR):
     os.makedirs(MEDIA_DIR)
 
 # ==========================================
-# 0. DATEN (NUR DIE 4 SÄULEN)
+# 0. DATEN (DIE 4 SÄULEN)
 # ==========================================
 DEFAULT_OBJEKTE = {
     "Meckelfeld (Cashflow-King)": {
@@ -90,8 +89,8 @@ DEFAULT_OBJEKTE = {
     "Elmshorn (Terrasse & Staffel)": {
         "Adresse": "Johannesstr. 24-28, 25335 Elmshorn", 
         "qm": 75.67, "zimmer": 2.0, "bj": 1994,
-        "Kaufpreis": 229000, "Nebenkosten_Quote": 0.1207, # 6.5% GrESt + 2% Notar + 3.57% Makler
-        "Renovierung": 0, "Heizung_Puffer": 1000, # Reduziert da Heizung 2012 (C)
+        "Kaufpreis": 229000, "Nebenkosten_Quote": 0.1207, 
+        "Renovierung": 0, "Heizung_Puffer": 1000, 
         "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
         "Miete_Start": 665, 
         "Hausgeld_Gesamt": 370, "Kosten_n_uml": 165, 
@@ -126,10 +125,7 @@ def load_data():
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
-            # Logik: Filtern! Wir behalten nur Objekte, die in DEFAULT_OBJEKTE stehen.
             merged = {k: v for k, v in data.items() if k in DEFAULT_OBJEKTE}
-            
-            # Neue Defaults auffüllen
             for k, v in DEFAULT_OBJEKTE.items():
                 if k not in merged:
                     merged[k] = v
@@ -174,7 +170,7 @@ def create_pdf_expose(obj_name, data, res):
     return pdf.output(dest='S').encode('latin-1', 'replace')
 
 # ==========================================
-# 2. BERECHNUNGSKERN (MIT 20-JAHRES-DATEN)
+# 2. BERECHNUNGSKERN (20 JAHRE)
 # ==========================================
 st.sidebar.title("🧭 Navigation")
 page = st.sidebar.radio("Menü:", ["📊 Portfolio Übersicht", "🔍 Detail-Ansicht & Bearbeiten"])
@@ -205,7 +201,7 @@ def calculate_investment(obj_name, params):
     immo_wert = kp
     
     # 20 Jahre Berechnung
-    for i in range(20):
+    for i in range(21): # 0 bis 20
         jahr = START_JAHR + i
         
         if is_elmshorn_staffel:
@@ -227,17 +223,18 @@ def calculate_investment(obj_name, params):
         
         restschuld -= tilgung
         
-        # Daten für Tabelle speichern
         data.append({
             "Jahr": jahr,
+            "Laufzeit": f"Jahr {i+1}",
             "Miete (p.a.)": rent_yr,
             "CF (netto)": cf,
             "Restschuld": restschuld,
             "Immo-Wert": immo_wert,
-            "Equity (Wert-Schuld)": immo_wert - restschuld
+            "Equity (Gewinn bei Verkauf)": immo_wert - restschuld - invest + (sum([d["CF (netto)"] for d in data]) if i>0 else 0)
         })
 
-    res_10 = data[9] # Jahr 10
+    # KPIs Jahr 10
+    res_10 = data[9] 
     equity_10 = (res_10["Immo-Wert"] - res_10["Restschuld"]) + sum([d["CF (netto)"] for d in data[:10]])
     cagr = ((equity_10 / invest)**(0.1) - 1) * 100 if invest > 0 else 0
     avg_cf = sum([d["CF (netto)"] for d in data[:10]]) / 120
@@ -282,7 +279,7 @@ else:
     obj_data = OBJEKTE[sel]
     
     # ----------------------------------------------------
-    # STECKBRIEF (MIT GALERIE & DOWNLOAD)
+    # STECKBRIEF
     # ----------------------------------------------------
     st.markdown("### 📍 Objekt-Steckbrief")
     with st.container(border=True):
@@ -299,7 +296,7 @@ else:
     if obj_data.get("Basis_Info"):
         st.info(f"ℹ️ **Info:** {obj_data['Basis_Info']}")
 
-    # Links & PDF Button
+    # Links & PDF
     c_link, c_pdf = st.columns(2)
     url = obj_data.get("Link", "")
     if url:
@@ -322,12 +319,11 @@ else:
                 st.image(u, use_container_width=True)
 
     # ----------------------------------------------------
-    # KPI & LIVE-CALC & BEARBEITUNG
+    # LIVE-CALC & JAHRESPLÄNE
     # ----------------------------------------------------
     st.markdown("---")
     st.header("📊 Kalkulation & Szenarien")
     
-    # PARAMETER BEARBEITEN
     with st.expander("⚙️ Parameter anpassen (Live)", expanded=True):
         c1, c2, c3, c4 = st.columns(4)
         curr_z = obj_data.get("Zins_Indiv", global_zins)
@@ -348,31 +344,40 @@ else:
             save_data(OBJEKTE)
             st.rerun()
 
-    # ERGEBNISSE
     res = calculate_investment(sel, OBJEKTE[sel])
     
-    k1, k2, k3 = st.columns(3)
-    k1.metric("Ø Cashflow (10J)", f"{res['Avg_CF']:,.0f} €")
-    k2.metric("EK-Rendite (Exit)", f"{res['CAGR']:.2f} %")
-    k3.metric("Gewinn nach 10J", f"{res['Gewinn_10J']:,.0f} €")
-
-    # ----------------------------------------------------
-    # DER 20-JAHRES-PLAN (TABELLE)
-    # ----------------------------------------------------
-    st.subheader("📋 Der 20-Jahres-Plan")
-    df_plan = pd.DataFrame(res["Detail"])
-    # Formatierung für schöne Anzeige
-    st.dataframe(
-        df_plan.style.format({
-            "Miete (p.a.)": "{:,.0f} €",
-            "CF (netto)": "{:,.0f} €",
-            "Restschuld": "{:,.0f} €",
-            "Immo-Wert": "{:,.0f} €",
-            "Equity (Wert-Schuld)": "{:,.0f} €"
-        }),
-        use_container_width=True,
-        height=400 # Feste Höhe zum Scrollen
-    )
+    # TABS FÜR 10 / 15 / 20 JAHRE
+    t10, t15, t20, t_all = st.tabs(["Plan 10 Jahre", "Plan 15 Jahre", "Plan 20 Jahre", "Gesamt-Tabelle"])
+    
+    with t10:
+        d = res["Detail"][9] # Index 9 = Jahr 10
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Restschuld (10J)", f"{d['Restschuld']:,.0f} €")
+        c2.metric("Immo-Wert (10J)", f"{d['Immo-Wert']:,.0f} €")
+        c3.metric("Gewinn bei Verkauf", f"{d['Equity (Gewinn bei Verkauf)']:,.0f} €")
+        
+    with t15:
+        d = res["Detail"][14] # Index 14 = Jahr 15
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Restschuld (15J)", f"{d['Restschuld']:,.0f} €")
+        c2.metric("Immo-Wert (15J)", f"{d['Immo-Wert']:,.0f} €")
+        c3.metric("Gewinn bei Verkauf", f"{d['Equity (Gewinn bei Verkauf)']:,.0f} €")
+        
+    with t20:
+        d = res["Detail"][19] # Index 19 = Jahr 20
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Restschuld (20J)", f"{d['Restschuld']:,.0f} €")
+        c2.metric("Immo-Wert (20J)", f"{d['Immo-Wert']:,.0f} €")
+        c3.metric("Gewinn bei Verkauf", f"{d['Equity (Gewinn bei Verkauf)']:,.0f} €")
+        
+    with t_all:
+        df_plan = pd.DataFrame(res["Detail"])
+        st.dataframe(
+            df_plan[["Laufzeit", "Miete (p.a.)", "CF (netto)", "Restschuld", "Immo-Wert", "Equity (Gewinn bei Verkauf)"]]
+            .style.format("{:,.0f} €"),
+            use_container_width=True,
+            height=400
+        )
 
     # ----------------------------------------------------
     # EDIT & UPLOAD AREA
@@ -380,11 +385,14 @@ else:
     st.markdown("---")
     st.header("⚙️ Daten ändern & Uploads")
     
-    with st.expander("📝 Stammdaten & Texte bearbeiten", expanded=False):
+    with st.expander("📝 Stammdaten, Link & Texte bearbeiten", expanded=False):
         c_e1, c_e2, c_e3 = st.columns(3)
         n_kp = c_e1.number_input("Kaufpreis", value=float(obj_data["Kaufpreis"]))
         n_miete = c_e2.number_input("Start-Miete", value=float(obj_data["Miete_Start"]))
         n_qm = c_e3.number_input("Wohnfläche", value=float(obj_data["qm"]))
+        
+        # HIER IST DAS NEUE LINK-FELD
+        n_link = st.text_input("Link zum Inserat", value=obj_data.get("Link", ""))
         
         n_case = st.text_area("Investment Case", value=obj_data.get("Summary_Case", ""))
         n_pros = st.text_area("Pros", value=obj_data.get("Summary_Pros", ""))
@@ -394,7 +402,7 @@ else:
         
         if st.button("💾 Änderungen Speichern"):
             OBJEKTE[sel].update({
-                "Kaufpreis": n_kp, "Miete_Start": n_miete, "qm": n_qm,
+                "Kaufpreis": n_kp, "Miete_Start": n_miete, "qm": n_qm, "Link": n_link,
                 "Summary_Case": n_case, "Summary_Pros": n_pros, "Summary_Cons": n_cons,
                 "Bild_URLs": [x.strip() for x in n_imgs.split("\n") if x.strip()]
             })
