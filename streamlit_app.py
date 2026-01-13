@@ -14,6 +14,7 @@ def check_password():
     try:
         correct_password = st.secrets["password"]
     except:
+        # Fallback für lokales Testen ohne secrets.toml
         correct_password = "DeinGeheimesPasswort123"
 
     def password_entered():
@@ -40,6 +41,7 @@ st.set_page_config(page_title="Immo-Cockpit Pro", layout="wide", initial_sidebar
 
 if not check_password(): st.stop()
 
+# CSS Hack für schönere Selectboxen
 st.markdown("""<style>div[data-baseweb="select"] > div {border-color: #808495 !important; border-width: 1px !important;}</style>""", unsafe_allow_html=True)
 
 START_JAHR = 2026
@@ -50,7 +52,7 @@ if not os.path.exists(MEDIA_DIR):
     os.makedirs(MEDIA_DIR)
 
 # ==========================================
-# 0. DATEN (DIE 4 SÄULEN - MIT BILDERN NEU WULMSTORF)
+# 0. DATEN (DIE 4 SÄULEN)
 # ==========================================
 DEFAULT_OBJEKTE = {
     "Meckelfeld (Cashflow-King)": {
@@ -60,14 +62,14 @@ DEFAULT_OBJEKTE = {
         "Renovierung": 0, "Heizung_Puffer": 2000, 
         "AfA_Satz": 0.03, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
         "Miete_Start": 632.50, "Hausgeld_Gesamt": 368, "Kosten_n_uml": 190, 
-        "Marktmiete_m2": 11.70, "Energie_Info": "181 kWh (F), Gas",
-        "Status": "Vermietet (Fixe Erhöhung 2027)",
+        "Marktmiete_m2": 13.45, "Energie_Info": "Gas (2022/23 neu!), 181 kWh (F)",
+        "Status": "Vermietet (Treppenmiete)",
         "Link": "https://www.kleinanzeigen.de/s-anzeige/etw-kapitalanlage-meckelfeld-eigenland-ohne-makler-/3295455732-196-2812", 
         "Bild_URLs": [], "PDF_Path": "",
-        "Basis_Info": """Miete steigt fix auf 690€ (2027). NK nur 7% (privat).""",
-        "Summary_Case": """Substanz-Deal mit extremem Steuer-Hebel.""",
-        "Summary_Pros": """- Provisionsfrei.\n- Fixe Mietsteigerung.\n- Hohe Rücklagen.""",
-        "Summary_Cons": """- Energieklasse F.\n- Müllplatz-Umlage möglich."""
+        "Basis_Info": """Heizung NEU (2022). Miete steigt in Stufen (2027: 690€, 2029: 727€, 2032: 793€).""",
+        "Summary_Case": """Substanz-Deal mit extremem Steuer-Hebel und neuer Heizung.""",
+        "Summary_Pros": """- Provisionsfrei.\n- Fixe Mietsteigerung (Treppe).\n- Heizung nagelneu.""",
+        "Summary_Cons": """- Energieklasse F (aber Heizung neu).\n- Boden/Bad optisch renovierungsbedürftig."""
     },
     "Neu Wulmstorf (Neubau-Anker)": {
         "Adresse": "Hauptstraße 43, 21629 Neu Wulmstorf", 
@@ -175,7 +177,7 @@ def create_pdf_expose(obj_name, data, res):
     return pdf.output(dest='S').encode('latin-1', 'replace')
 
 # ==========================================
-# 2. BERECHNUNGSKERN (MIT PRE-TAX CF)
+# 2. BERECHNUNGSKERN (MIT SPEZIAL-MIETEN)
 # ==========================================
 st.sidebar.title("🧭 Navigation")
 page = st.sidebar.radio("Menü:", ["📊 Portfolio Übersicht", "🔍 Detail-Ansicht & Bearbeiten"])
@@ -198,8 +200,11 @@ def calculate_investment(obj_name, params):
     loan = kp
     rate_pa = loan * (zins + global_tilgung)
     
-    is_elmshorn_staffel = "Elmshorn" in obj_name and "Terrasse" in obj_name
     rent_start = params["Miete_Start"] * 12
+    
+    # Check Special Logic Flags
+    is_elmshorn_staffel = "Elmshorn" in obj_name and "Terrasse" in obj_name
+    is_meckelfeld_treppe = "Meckelfeld" in obj_name
     
     data = []
     restschuld = loan
@@ -209,12 +214,37 @@ def calculate_investment(obj_name, params):
     for i in range(21): # 0 bis 20
         jahr = START_JAHR + i
         
+        # --- MIET-LOGIK ---
         if is_elmshorn_staffel:
             if jahr == 2026: rent_yr = 9180 
             elif jahr == 2027: rent_yr = 9780 
             elif jahr > 2027: rent_yr = 9780 * (1 + miet_st)**(i - 2) 
             else: rent_yr = rent_start
+            
+        elif is_meckelfeld_treppe:
+            # Manuelle Treppe gemäß User & Frau Lorenz
+            # 2026: 632.50
+            # 2027: 690.00 (Zugesichert)
+            # 2029: 727.38 (Lorenz Stufe 1)
+            # 2032: 793.50 (Lorenz Stufe 2, unter Annahme 3J Sperrfrist)
+            
+            rent_monthly = 0
+            if jahr < 2027:
+                rent_monthly = params["Miete_Start"] # 632.50
+            elif jahr < 2029:
+                rent_monthly = 690.00
+            elif jahr < 2032:
+                rent_monthly = 727.38
+            else:
+                # Ab 2032 Stufe 2, danach normale Steigerung
+                base_2032 = 793.50
+                years_since_2032 = jahr - 2032
+                rent_monthly = base_2032 * (1 + miet_st)**years_since_2032
+            
+            rent_yr = rent_monthly * 12
+            
         else:
+            # Standard
             rent_yr = rent_start * (1 + miet_st)**i
             
         immo_wert *= (1 + wert_st)
@@ -222,7 +252,7 @@ def calculate_investment(obj_name, params):
         tilgung = rate_pa - zinsen
         costs = params["Kosten_n_uml"] * 12
         
-        # Cashflow VOR Steuer (Miete - Rate - Kosten)
+        # Cashflow VOR Steuer
         cf_pre_tax = rent_yr - rate_pa - costs
 
         # Steuer-Effekt
@@ -238,6 +268,7 @@ def calculate_investment(obj_name, params):
             "Jahr": jahr,
             "Laufzeit": f"Jahr {i+1}",
             "Miete (p.a.)": rent_yr,
+            "Miete (mtl.)": rent_yr / 12,
             "CF (vor Steuer)": cf_pre_tax,
             "CF (nach Steuer)": cf_post_tax,
             "Restschuld": restschuld,
@@ -329,7 +360,7 @@ else:
             st.markdown(f"**🔑 Status:** {obj_data.get('Status', 'n.v.')}")
         
         st.markdown("---")
-        # DER NEUE INVEST-BLOCK
+        # INVEST-BLOCK (EK-BEDARF) - AUF WUNSCH BEIBEHALTEN
         c_inv1, c_inv2 = st.columns([1, 2])
         with c_inv1:
             st.metric("💸 Invest (Eigenkapital)", f"{invest_ek:,.0f} €", help="Summe aus Kaufnebenkosten, Renovierung und Puffer")
@@ -388,7 +419,14 @@ else:
 
         new_z = c1.slider("Zins (%)", 1.0, 6.0, curr_z*100, 0.1, key=f"z_{sel}") / 100
         new_a = c2.slider("AfA (%)", 1.0, 5.0, curr_a*100, 0.1, key=f"a_{sel}") / 100
-        new_m = c3.slider("Mietsteigerung (%)", 0.0, 5.0, curr_m*100, 0.1, key=f"m_{sel}") / 100
+        
+        # Hinweis bei Meckelfeld, dass Mietsteigerung hier inaktiv ist
+        if "Meckelfeld" in sel:
+            st.caption("ℹ️ Meckelfeld nutzt feste Stufen (2027/29/32)")
+            new_m = curr_m # Keine Änderung
+        else:
+            new_m = c3.slider("Mietsteigerung (%)", 0.0, 5.0, curr_m*100, 0.1, key=f"m_{sel}") / 100
+            
         new_w = c4.slider("Wertsteigerung (%)", 0.0, 6.0, curr_w*100, 0.1, key=f"w_{sel}") / 100
         
         if (new_z != curr_z) or (new_a != curr_a) or (new_m != curr_m) or (new_w != curr_w):
@@ -401,18 +439,15 @@ else:
 
     res = calculate_investment(sel, OBJEKTE[sel])
     
-    # 1. TOP KPIs: 4 SPALTEN (Cashflow, EKR, Miete/qm, Gewinn)
+    # 1. TOP KPIs
     k1, k2, k3, k4 = st.columns(4)
-    
-    # Calc rent per sqm
-    rent_monthly = res["Params"]["Miete_Start"]
     qm = res["Params"]["qm"]
-    miete_sqm = rent_monthly / qm if qm > 0 else 0
+    miete_sqm = (res["Detail"][0]["Miete (mtl.)"]) / qm if qm > 0 else 0
     markt_sqm = res["Params"].get("Marktmiete_m2", 0)
     
     k1.metric("Ø Monatl. Cashflow (10 Jahre)", f"{res['Avg_CF']:,.0f} €")
     k2.metric("EKR (Eigenkapitalrendite 10J)", f"{res['CAGR']:.2f} %")
-    k3.metric("Miete/m² (Ist vs. Soll)", f"{miete_sqm:.2f} €", f"Markt: {markt_sqm:.2f} €")
+    k3.metric("Miete/m² (Start)", f"{miete_sqm:.2f} €", f"Ziel: {markt_sqm:.2f} €")
     k4.metric("Gewinn nach 10J", f"{res['Gewinn_10J']:,.0f} €")
 
     # 2. HAUPT-TABELLE (10 JAHRE)
@@ -420,11 +455,11 @@ else:
     df_full = pd.DataFrame(res["Detail"])
     
     # Nur die ersten 10 Jahre anzeigen + relevante Spalten
-    df_10 = df_full.head(10)[["Laufzeit", "Miete (p.a.)", "CF (vor Steuer)", "CF (nach Steuer)", "Restschuld", "Immo-Wert"]]
+    df_10 = df_full.head(10)[["Laufzeit", "Miete (mtl.)", "CF (vor Steuer)", "CF (nach Steuer)", "Restschuld", "Immo-Wert"]]
     
     st.dataframe(
         df_10.style.format({
-            "Miete (p.a.)": "{:,.0f} €",
+            "Miete (mtl.)": "{:,.2f} €",
             "CF (vor Steuer)": "{:,.0f} €",
             "CF (nach Steuer)": "{:,.0f} €",
             "Restschuld": "{:,.0f} €",
@@ -434,22 +469,22 @@ else:
         hide_index=True
     )
     
-    # 3. AUSBLICK 15 / 20 JAHRE
+    # 3. AUSBLICK
     with st.expander("🔮 Ausblick: Jahr 15 & Jahr 20 ansehen"):
         c_15, c_20 = st.columns(2)
         
         with c_15:
             st.markdown("#### Jahr 15")
             d15 = res["Detail"][14]
+            st.write(f"**Miete:** {d15['Miete (mtl.)']:,.2f} €")
             st.write(f"**Restschuld:** {d15['Restschuld']:,.0f} €")
-            st.write(f"**Immo-Wert:** {d15['Immo-Wert']:,.0f} €")
             st.write(f"**Equity:** {d15['Equity']:,.0f} €")
             
         with c_20:
             st.markdown("#### Jahr 20")
             d20 = res["Detail"][19]
+            st.write(f"**Miete:** {d20['Miete (mtl.)']:,.2f} €")
             st.write(f"**Restschuld:** {d20['Restschuld']:,.0f} €")
-            st.write(f"**Immo-Wert:** {d20['Immo-Wert']:,.0f} €")
             st.write(f"**Equity:** {d20['Equity']:,.0f} €")
 
     # ----------------------------------------------------
