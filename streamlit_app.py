@@ -52,7 +52,7 @@ if not os.path.exists(MEDIA_DIR):
     os.makedirs(MEDIA_DIR)
 
 # ==========================================
-# 0. DATEN (DIE 4 SÄULEN)
+# 0. DATEN (DIE OBJEKTE)
 # ==========================================
 DEFAULT_OBJEKTE = {
     "Meckelfeld (Cashflow-King)": {
@@ -70,6 +70,41 @@ DEFAULT_OBJEKTE = {
         "Summary_Case": """Substanz-Deal mit extremem Steuer-Hebel und neuer Heizung.""",
         "Summary_Pros": """- Provisionsfrei.\n- Fixe Mietsteigerung (Treppe).\n- Heizung nagelneu.""",
         "Summary_Cons": """- Energieklasse F (aber Heizung neu).\n- Boden/Bad optisch renovierungsbedürftig."""
+    },
+    "Stade (4-Zi Leerstand/Top-Zustand)": {
+        "Adresse": "Köhnshöhe 10a, 21680 Stade", 
+        "qm": 87.0, "zimmer": 3.5, "bj": 1972,
+        "Kaufpreis": 239000, "Nebenkosten_Quote": 0.07, # Provisionsfrei (5% GrESt + 2% Notar)
+        "Renovierung": 0, "Heizung_Puffer": 0, # Zustand ist top ("Einziehen & Wohlfühlen")
+        "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
+        "Miete_Start": 950, # SOLL-Miete bei Neuvermietung (ca. 10,90 €/qm)
+        "Hausgeld_Gesamt": 286, "Kosten_n_uml": 105, # Sehr günstig!
+        "Marktmiete_m2": 11.50, "Energie_Info": "Öl-Zentralheizung (Bj 1972), Klasse E",
+        "Status": "Leerstehend (Sofort neu vermietbar)",
+        "Link": "https://www.kleinanzeigen.de/s-anzeige/einziehen-wohlfuehlen-moderne-4-zimmer-wohnung-in-toplage-/3282261577-196-2829", 
+        "Bild_URLs": [], "PDF_Path": "",
+        "Basis_Info": """Provisionsfrei! Leerstand = Chance auf sofortige Marktmiete. Hausgeld extrem niedrig.""",
+        "Summary_Case": """Cashflow-Case durch Neuvermietung. Risiko: Ölheizung in Hochhaus-Siedlung.""",
+        "Summary_Pros": """- Keine Maklergebühr.\n- Kein Sanierungsstau in der Wohnung.\n- Sofort ca. 11€/qm realisierbar.""",
+        "Summary_Cons": """- Lage (Hochhaus-Charakter).\n- Ölheizung (Zukunfts-Risiko)."""
+    },
+    "Stade (Altbau-Schnapper)": {
+        "Adresse": "Zentrumsnah, 21680 Stade", 
+        "qm": 67.0, "zimmer": 2.0, "bj": 1905,
+        "Kaufpreis": 159500, "Nebenkosten_Quote": 0.1057, # Mit Makler (ca. 3,57%)
+        "Renovierung": 2000, "Heizung_Puffer": 5000, # Puffer für Austausch Gastherme (Bj 1990)
+        "AfA_Satz": 0.025, # WICHTIG: 2,5% AfA weil Baujahr vor 1925!
+        "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
+        "Miete_Start": 575, # Ist-Miete (8,58 €/qm)
+        "Hausgeld_Gesamt": 170, "Kosten_n_uml": 69, # Sehr günstig
+        "Marktmiete_m2": 10.00, "Energie_Info": "Gas-Etage (Bj 1990 - Austausch fällig!)",
+        "Status": "Vermietet (Steigerungspotenzial)",
+        "Link": "https://www.kleinanzeigen.de/s-anzeige/vermietete-altbauwohnung-mit-balkon-in-zentraler-lage-/3279", 
+        "Bild_URLs": [], "PDF_Path": "",
+        "Basis_Info": """Heizung (Gastherme 1990) muss gemacht werden -> Puffer eingerechnet. Kleine WEG.""",
+        "Summary_Case": """Günstiger Einkauf (2.380€/qm). Cashflow fast am Ziel (-225€).""",
+        "Summary_Pros": """- Hohe AfA (2,5%).\n- Extrem niedriges Hausgeld.\n- Preis verhandelbar wegen Heizung.""",
+        "Summary_Cons": """- Maklerprovision fällig.\n- Heizungstausch steht an."""
     },
     "Neu Wulmstorf (Neubau-Anker)": {
         "Adresse": "Hauptstraße 43, 21629 Neu Wulmstorf", 
@@ -336,7 +371,7 @@ else:
         grest_proz = 5.5
     elif "elmshorn" in addr: # Schleswig-Holstein
         grest_proz = 6.5
-    else: # Default Niedersachsen (Meckelfeld/Neu Wulmstorf)
+    else: # Default Niedersachsen (Meckelfeld/Neu Wulmstorf/Stade)
         grest_proz = 5.0
         
     notar_proz = 2.0
