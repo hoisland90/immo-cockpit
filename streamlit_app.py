@@ -71,6 +71,23 @@ DEFAULT_OBJEKTE = {
         "Summary_Pros": """- Provisionsfrei.\n- Fixe Mietsteigerung (Treppe).\n- Heizung nagelneu.""",
         "Summary_Cons": """- Energieklasse F (aber Heizung neu).\n- Boden/Bad optisch renovierungsbedürftig."""
     },
+    "Buxtehude (5-Zi Volumen-Deal)": {
+        "Adresse": "Stader Str., 21614 Buxtehude", 
+        "qm": 109.07, "zimmer": 5.0, "bj": 1972,
+        "Kaufpreis": 236000, "Nebenkosten_Quote": 0.1057, # Mit Makler
+        "Renovierung": 0, "Heizung_Puffer": 2000, # Puffer für Energie-Themen
+        "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
+        "Miete_Start": 925, # 11.100 p.a. / 12
+        "Hausgeld_Gesamt": 380, "Kosten_n_uml": 120, # Geschätzt
+        "Marktmiete_m2": 10.00, "Energie_Info": "Fernwärme (Bj 1972), Klasse F (177 kWh)",
+        "Status": "Vermietet seit 2007",
+        "Link": "https://www.kleinanzeigen.de/s-anzeige/vermietete-eigentumswohnung-in-buxtehude/3299469372-196-3328", 
+        "Bild_URLs": [], "PDF_Path": "",
+        "Basis_Info": """Riesige Fläche für 2.163€/qm. Langjähriger Mieter (Potenzial). Fernwärme.""",
+        "Summary_Case": """Substanz-Deal. Günstiger Einkauf, aber Energie-Risiko (Klasse F).""",
+        "Summary_Pros": """- Preis/qm sehr niedrig (2.163€).\n- 5 Zimmer (selten).\n- Fernwärme (Zukunftssicher).""",
+        "Summary_Cons": """- Energieklasse F (Sanierungsdruck).\n- Alter Mietvertrag (Kappungsgrenze)."""
+    },
     "Stade (4-Zi Leerstand/Top-Zustand)": {
         "Adresse": "Köhnshöhe 10a, 21680 Stade", 
         "qm": 87.0, "zimmer": 3.5, "bj": 1972,
