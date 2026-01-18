@@ -55,6 +55,40 @@ if not os.path.exists(MEDIA_DIR):
 # 0. DATEN (DIE OBJEKTE)
 # ==========================================
 DEFAULT_OBJEKTE = {
+    "Winsen (Optimierter Deal)": {
+        "Adresse": "21423 Winsen (Luhe)", 
+        "qm": 55.0, "zimmer": 2.0, "bj": 1985,
+        "Kaufpreis": 160080, "Nebenkosten_Quote": 0.1057, # Mit Makler (Verhandelt auf -8%)
+        "Renovierung": 0, "Heizung_Puffer": 1000, 
+        "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
+        "Miete_Start": 633.65, # Starke 11,52 €/qm
+        "Hausgeld_Gesamt": 262, "Kosten_n_uml": 80, 
+        "Marktmiete_m2": 11.52, "Energie_Info": "Gas-Zentral, Bj 1985 (Solide)",
+        "Status": "Vermietet (Top-Miete)",
+        "Link": "https://www.immobilienscout24.de/expose/159800505", 
+        "Bild_URLs": [], "PDF_Path": "",
+        "Basis_Info": """Kaufpreis fiktiv auf 160.080€ (-8%) verhandelt! Miete ist mit 11,50€/qm top.""",
+        "Summary_Case": """Durch Preisreduktion fast Cashflow-Neutral (-180€). Solide Substanz.""",
+        "Summary_Pros": """- Hohe Miete (633€).\n- Guter Zustand (Bj 85).\n- Verhandlungs-Potenzial.""",
+        "Summary_Cons": """- Maklerprovision fällig.\n- Wenig Mietsteigerungspotenzial (schon hoch)."""
+    },
+    "Pinneberg-Thesdorf (Provisionsfrei)": {
+        "Adresse": "25421 Pinneberg (Thesdorf)", 
+        "qm": 59.0, "zimmer": 2.0, "bj": 1976,
+        "Kaufpreis": 174000, "Nebenkosten_Quote": 0.085, # Provisionsfrei! (6,5% GrESt SH + 2% Notar)
+        "Renovierung": 1500, "Heizung_Puffer": 0, 
+        "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
+        "Miete_Start": 650, # Annahme: Neuvermietung ca. 11€/qm
+        "Hausgeld_Gesamt": 245, "Kosten_n_uml": 85, 
+        "Marktmiete_m2": 11.50, "Energie_Info": "Bj 1976, Fernwärme/Gas (Prüfen!)",
+        "Status": "Offen (Anlage/Eigennutz)",
+        "Link": "https://www.kleinanzeigen.de/s-anzeige/anlage-oder-eigennutzung-2-zi-whg-in-pi-thesdorf/3301019183-196-786", 
+        "Bild_URLs": [], "PDF_Path": "",
+        "Basis_Info": """Provisionsfrei! S-Bahn-Lage. Günstiges Hausgeld.""",
+        "Summary_Case": """Geringes Invest (nur ~15k EK). Solider Cashflow bei Neuvermietung.""",
+        "Summary_Pros": """- Provisionsfrei.\n- S-Bahn Nähe.\n- Hausgeld moderat.""",
+        "Summary_Cons": """- Baujahr 1976 (Beton-Charme).\n- Miete ist Schätzwert."""
+    },
     "Meckelfeld (Cashflow-King)": {
         "Adresse": "Am Bach, 21217 Seevetal", 
         "qm": 59, "zimmer": 2.0, "bj": 1965,
@@ -74,11 +108,11 @@ DEFAULT_OBJEKTE = {
     "Buxtehude (5-Zi Volumen-Deal)": {
         "Adresse": "Stader Str., 21614 Buxtehude", 
         "qm": 109.07, "zimmer": 5.0, "bj": 1972,
-        "Kaufpreis": 236000, "Nebenkosten_Quote": 0.1057, # Mit Makler
-        "Renovierung": 0, "Heizung_Puffer": 2000, # Puffer für Energie-Themen
+        "Kaufpreis": 236000, "Nebenkosten_Quote": 0.1057, 
+        "Renovierung": 0, "Heizung_Puffer": 2000, 
         "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
-        "Miete_Start": 925, # 11.100 p.a. / 12
-        "Hausgeld_Gesamt": 380, "Kosten_n_uml": 120, # Geschätzt
+        "Miete_Start": 925, 
+        "Hausgeld_Gesamt": 380, "Kosten_n_uml": 120, 
         "Marktmiete_m2": 10.00, "Energie_Info": "Fernwärme (Bj 1972), Klasse F (177 kWh)",
         "Status": "Vermietet seit 2007",
         "Link": "https://www.kleinanzeigen.de/s-anzeige/vermietete-eigentumswohnung-in-buxtehude/3299469372-196-3328", 
@@ -91,11 +125,11 @@ DEFAULT_OBJEKTE = {
     "Stade (4-Zi Leerstand/Top-Zustand)": {
         "Adresse": "Köhnshöhe 10a, 21680 Stade", 
         "qm": 87.0, "zimmer": 3.5, "bj": 1972,
-        "Kaufpreis": 239000, "Nebenkosten_Quote": 0.07, # Provisionsfrei (5% GrESt + 2% Notar)
-        "Renovierung": 0, "Heizung_Puffer": 0, # Zustand ist top ("Einziehen & Wohlfühlen")
+        "Kaufpreis": 239000, "Nebenkosten_Quote": 0.07, 
+        "Renovierung": 0, "Heizung_Puffer": 0, 
         "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
-        "Miete_Start": 950, # SOLL-Miete bei Neuvermietung (ca. 10,90 €/qm)
-        "Hausgeld_Gesamt": 286, "Kosten_n_uml": 105, # Sehr günstig!
+        "Miete_Start": 950, 
+        "Hausgeld_Gesamt": 286, "Kosten_n_uml": 105, 
         "Marktmiete_m2": 11.50, "Energie_Info": "Öl-Zentralheizung (Bj 1972), Klasse E",
         "Status": "Leerstehend (Sofort neu vermietbar)",
         "Link": "https://www.kleinanzeigen.de/s-anzeige/einziehen-wohlfuehlen-moderne-4-zimmer-wohnung-in-toplage-/3282261577-196-2829", 
@@ -108,12 +142,12 @@ DEFAULT_OBJEKTE = {
     "Stade (Altbau-Schnapper)": {
         "Adresse": "Zentrumsnah, 21680 Stade", 
         "qm": 67.0, "zimmer": 2.0, "bj": 1905,
-        "Kaufpreis": 159500, "Nebenkosten_Quote": 0.1057, # Mit Makler (ca. 3,57%)
-        "Renovierung": 2000, "Heizung_Puffer": 5000, # Puffer für Austausch Gastherme (Bj 1990)
-        "AfA_Satz": 0.025, # WICHTIG: 2,5% AfA weil Baujahr vor 1925!
+        "Kaufpreis": 159500, "Nebenkosten_Quote": 0.1057, 
+        "Renovierung": 2000, "Heizung_Puffer": 5000, 
+        "AfA_Satz": 0.025, 
         "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
-        "Miete_Start": 575, # Ist-Miete (8,58 €/qm)
-        "Hausgeld_Gesamt": 170, "Kosten_n_uml": 69, # Sehr günstig
+        "Miete_Start": 575, 
+        "Hausgeld_Gesamt": 170, "Kosten_n_uml": 69, 
         "Marktmiete_m2": 10.00, "Energie_Info": "Gas-Etage (Bj 1990 - Austausch fällig!)",
         "Status": "Vermietet (Steigerungspotenzial)",
         "Link": "https://www.kleinanzeigen.de/s-anzeige/vermietete-altbauwohnung-mit-balkon-in-zentraler-lage-/3279", 
@@ -386,9 +420,9 @@ else:
     addr = obj_data.get("Adresse", "").lower()
     if "hamburg" in addr:
         grest_proz = 5.5
-    elif "elmshorn" in addr: # Schleswig-Holstein
+    elif "elmshorn" in addr or "pinneberg" in addr: # Schleswig-Holstein
         grest_proz = 6.5
-    else: # Default Niedersachsen (Meckelfeld/Neu Wulmstorf/Stade)
+    else: # Default Niedersachsen (Meckelfeld/Neu Wulmstorf/Stade/Winsen)
         grest_proz = 5.0
         
     notar_proz = 2.0
