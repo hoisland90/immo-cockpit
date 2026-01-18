@@ -54,6 +54,41 @@ if not os.path.exists(MEDIA_DIR):
 # ==========================================
 DEFAULT_OBJEKTE = {
     # --- DIE AKTIVEN ---
+"Buxtehude (Dachterrasse & Lift)": {
+        "Adresse": "Buxtehude Süd (Stader Str. Umgebung)", 
+        "qm": 66.26, "zimmer": 2.0, "bj": 1992, 
+        "Kaufpreis": 172000, "Nebenkosten_Quote": 0.07, # Provisionsfrei!
+        "Renovierung": 1000, "Heizung_Puffer": 0, 
+        "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
+        "Miete_Start": 695, # Schätzung (da im Exposé nicht genannt)
+        "Hausgeld_Gesamt": 398, "Kosten_n_uml": 140, # Hohes Hausgeld beachten!
+        "Marktmiete_m2": 11.50, "Energie_Info": "Gas (1992), 106 kWh (D)",
+        "Status": "Vermietet", "Link": "https://www.kleinanzeigen.de/s-anzeige/3302562867", 
+        "Bild_URLs": [], "PDF_Path": "", 
+        "Archiviert": False, 
+        "Basis_Info": "Provisionsfrei! 4. OG mit Lift. Aber: Sehr hohes Hausgeld (398€).", 
+        "Summary_Case": "Substanz-Deal. Wenn Miete steigerbar, sehr gut. Achtung bei den BK.", 
+        "Summary_Pros": "Provisionsfrei, Fahrstuhl, Dachterrasse.", 
+        "Summary_Cons": "Hausgeld frisst Rendite."
+    },
+    "Harsefeld (1-Zi Einsteiger)": {
+        "Adresse": "Zentrum, 21698 Harsefeld", 
+        "qm": 36.0, "zimmer": 1.0, "bj": 1985, 
+        "Kaufpreis": 84500, "Nebenkosten_Quote": 0.1057, # Mit Makler
+        "Renovierung": 500, "Heizung_Puffer": 0, 
+        "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
+        "Miete_Start": 325, # Ist-Miete
+        "Hausgeld_Gesamt": 180, "Kosten_n_uml": 60, # Schätzung (fehlt im Exposé)
+        "Marktmiete_m2": 10.00, "Energie_Info": "Gas, 105 kWh (D)",
+        "Status": "Vermietet seit 2008", "Link": "https://www.kleinanzeigen.de/s-anzeige/3221819015", 
+        "Bild_URLs": [], "PDF_Path": "", 
+        "Archiviert": False, 
+        "Basis_Info": "Kleines Invest, solider Mieter (seit 2008).", 
+        "Summary_Case": "Langweiliger, aber solider Cashflow-Anker.", 
+        "Summary_Pros": "Günstiger Einstieg (<100k), 4,6% Rendite.", 
+        "Summary_Cons": "Mieterhöhung bei Altvertrag schwierig."
+    },
+    
     "Meckelfeld (Ziel-Preis 160k)": {
         "Adresse": "Am Bach, 21217 Seevetal", "qm": 59, "zimmer": 2.0, "bj": 1965, "Kaufpreis": 160000, "Nebenkosten_Quote": 0.07, 
         "Renovierung": 0, "Heizung_Puffer": 2000, "AfA_Satz": 0.03, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
