@@ -8,7 +8,7 @@ import os
 import shutil
 from datetime import date
 import plotly.express as px
-import plotly.graph_objects as go # Wichtig für Charts
+import plotly.graph_objects as go
 
 # ==========================================
 # 0. SICHERHEIT / LOGIN
@@ -46,7 +46,7 @@ if not check_password(): st.stop()
 st.markdown("""<style>div[data-baseweb="select"] > div {border-color: #808495 !important; border-width: 1px !important;}</style>""", unsafe_allow_html=True)
 
 START_JAHR = 2026
-DATA_FILE = "portfolio_data_v5_full.json" 
+DATA_FILE = "portfolio_data_v5_final_fix.json" 
 MEDIA_DIR = "expose_files"
 
 if not os.path.exists(MEDIA_DIR):
@@ -61,29 +61,33 @@ DEFAULT_OBJEKTE = {
         "Adresse": "Am Bach, 21217 Seevetal", "qm": 59, "zimmer": 2.0, "bj": 1965, "Kaufpreis": 160000, "Nebenkosten_Quote": 0.07, 
         "Renovierung": 0, "Heizung_Puffer": 2000, "AfA_Satz": 0.03, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
         "Miete_Start": 632.50, "Hausgeld_Gesamt": 368, "Kosten_n_uml": 130, "Marktmiete_m2": 13.45, "Energie_Info": "Gas (2022 neu), F",
-        "Status": "Vermietet (Treppe)", "Link": "", "Bild_URLs": [], "PDF_Path": "", "Archiviert": False, 
-        "Basis_Info": "Zielpreis 160k. Miet-Treppe fix.", "Summary_Case": "Cashflow-King mit Steuer-Hebel.", "Summary_Pros": "Provisionsfrei, Heizung neu.", "Summary_Cons": "Energie F."
+        "Status": "Vermietet (Treppe)", "Link": "", "Bild_URLs": [], "PDF_Path": "",
+        "Archiviert": False, "Basis_Info": "Zielpreis 160k. Miet-Treppe fix.",
+        "Summary_Case": "Cashflow-King mit Steuer-Hebel.", "Summary_Pros": "Provisionsfrei, Heizung neu.", "Summary_Cons": "Energie F."
     },
     "Neu Wulmstorf (Neubau-Anker)": {
         "Adresse": "Hauptstraße 43, 21629 Neu Wulmstorf", "qm": 65.79, "zimmer": 2.0, "bj": 2016, "Kaufpreis": 249000, "Nebenkosten_Quote": 0.07, 
         "Renovierung": 0, "Heizung_Puffer": 0, "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
         "Miete_Start": 920, "Hausgeld_Gesamt": 260, "Kosten_n_uml": 60, "Marktmiete_m2": 14.50, "Energie_Info": "Gas+Solar (Bj 2016), B",
-        "Status": "Leer ab 02/2026", "Link": "", "Bild_URLs": [], "PDF_Path": "", "Archiviert": False, 
-        "Basis_Info": "Neubau 2016. Provisionsfrei.", "Summary_Case": "Sicherheits-Anker. Wertsicherung.", "Summary_Pros": "Provisionsfrei, Technik top.", "Summary_Cons": "Lage B73."
+        "Status": "Leer ab 02/2026", "Link": "", "Bild_URLs": [], "PDF_Path": "",
+        "Archiviert": False, "Basis_Info": "Neubau 2016. Provisionsfrei.",
+        "Summary_Case": "Sicherheits-Anker. Wertsicherung.", "Summary_Pros": "Provisionsfrei, Technik top.", "Summary_Cons": "Lage B73."
     },
     "Elmshorn (Terrasse & Staffel)": {
         "Adresse": "Johannesstr. 24-28, 25335 Elmshorn", "qm": 75.67, "zimmer": 2.0, "bj": 1994, "Kaufpreis": 229000, "Nebenkosten_Quote": 0.1207, 
         "Renovierung": 0, "Heizung_Puffer": 1000, "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
         "Miete_Start": 665, "Hausgeld_Gesamt": 370, "Kosten_n_uml": 165, "Marktmiete_m2": 11.00, "Energie_Info": "Gas Bj 2012 (C)",
-        "Status": "Vermietet (Staffel)", "Link": "", "Bild_URLs": [], "PDF_Path": "", "Archiviert": False, 
-        "Basis_Info": "Mietstaffel (26/27). Heizung 2012.", "Summary_Case": "Aufsteiger mit Rendite-Turbo.", "Summary_Pros": "Mietstaffel fix, Terrasse.", "Summary_Cons": "Hohes Hausgeld."
+        "Status": "Vermietet (Staffel)", "Link": "", "Bild_URLs": [], "PDF_Path": "",
+        "Archiviert": False, "Basis_Info": "Mietstaffel (26/27). Heizung 2012.",
+        "Summary_Case": "Aufsteiger mit Rendite-Turbo.", "Summary_Pros": "Mietstaffel fix, Terrasse.", "Summary_Cons": "Hohes Hausgeld."
     },
     "Harburg (Maisonette/Lifestyle)": {
         "Adresse": "Marienstr. 52, 21073 Hamburg", "qm": 71, "zimmer": 2.0, "bj": 1954, "Kaufpreis": 230000, "Nebenkosten_Quote": 0.1107, 
         "Renovierung": 0, "Heizung_Puffer": 5000, "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
         "Miete_Start": 720, "Hausgeld_Gesamt": 204, "Kosten_n_uml": 84, "Marktmiete_m2": 12.00, "Energie_Info": "Gas-Etage (D)",
-        "Status": "Vermietet", "Link": "", "Bild_URLs": [], "PDF_Path": "", "Archiviert": False, 
-        "Basis_Info": "Liebhaber-Objekt. Negativer CF.", "Summary_Case": "Trophy Asset / Spekulation.", "Summary_Pros": "Galerie, Uninähe.", "Summary_Cons": "CF negativ, WEG-Themen."
+        "Status": "Vermietet", "Link": "", "Bild_URLs": [], "PDF_Path": "",
+        "Archiviert": False, "Basis_Info": "Liebhaber-Objekt. Negativer CF.",
+        "Summary_Case": "Trophy Asset / Spekulation.", "Summary_Pros": "Galerie, Uninähe.", "Summary_Cons": "CF negativ, WEG-Themen."
     },
     
     # --- DAS ARCHIV ---
@@ -107,7 +111,8 @@ def load_data():
             data = json.load(f)
             merged = data.copy()
             for k, v in DEFAULT_OBJEKTE.items():
-                if k not in merged: merged[k] = v
+                if k not in merged:
+                    merged[k] = v
             return merged
     return DEFAULT_OBJEKTE
 
@@ -267,8 +272,11 @@ if page == "📊 Portfolio Übersicht":
                     "Objekt": r["Name"], "Kaufpreis": r["KP"], "Rendite (%)": round(r["Rendite"], 2),
                     "Invest (Größe)": r["Invest"], "Status": "Archiv" if r["Archiviert"] else "Aktiv"
                 })
-            fig = px.scatter(pd.DataFrame(bubble_data), x="Kaufpreis", y="Rendite (%)", size="Invest (Größe)", color="Status", 
-                             hover_name="Objekt", size_max=60, color_discrete_map={"Aktiv": "green", "Archiv": "red"})
+            fig = px.scatter(
+                pd.DataFrame(bubble_data), 
+                x="Kaufpreis", y="Rendite (%)", size="Invest (Größe)", color="Status", 
+                hover_name="Objekt", size_max=60, color_discrete_map={"Aktiv": "green", "Archiv": "red"}
+            )
             st.plotly_chart(fig, use_container_width=True)
         
         with t2:
@@ -276,16 +284,21 @@ if page == "📊 Portfolio Übersicht":
             years = list(range(START_JAHR, START_JAHR + 21))
             agg_equity = {y: 0 for y in years}
             agg_debt = {y: 0 for y in years}
+            
             for r in display_results:
                 for row in r["Detail"]:
                     agg_equity[row["Jahr"]] += (row["Immo-Wert"] - row["Restschuld"])
                     agg_debt[row["Jahr"]] += row["Restschuld"]
             
-            df_wealth = pd.DataFrame({"Jahr": years, "Netto-Vermögen": list(agg_equity.values()), "Bank-Schulden": list(agg_debt.values())})
+            df_wealth = pd.DataFrame({
+                "Jahr": years,
+                "Netto-Vermögen": [agg_equity[y] for y in years],
+                "Restschuld": [agg_debt[y] for y in years]
+            })
             
             fig_w = go.Figure()
             fig_w.add_trace(go.Scatter(x=df_wealth["Jahr"], y=df_wealth["Netto-Vermögen"], stackgroup='one', name='Netto-Vermögen', line=dict(color='#2E7D32', width=0)))
-            fig_w.add_trace(go.Scatter(x=df_wealth["Jahr"], y=df_wealth["Bank-Schulden"], stackgroup='one', name='Bank-Schulden', line=dict(color='#C62828', width=0)))
+            fig_w.add_trace(go.Scatter(x=df_wealth["Jahr"], y=df_wealth["Restschuld"], stackgroup='one', name='Bank-Schulden', line=dict(color='#C62828', width=0)))
             fig_w.update_layout(height=400, hovermode="x unified")
             st.plotly_chart(fig_w, use_container_width=True)
 
@@ -301,7 +314,7 @@ if page == "📊 Portfolio Übersicht":
             "Rendite": f"{r['Rendite']:.2f} %",
             "EKR (10J)": f"{r['CAGR']:.2f} %",
             "Ø CF (Nach St.)": f"{r['Avg_CF']:,.0f} €",
-            "Gewinn (10J)": f"{r['Gewinn_10J']:,.0f} €" # NEUE SPALTE
+            "Gewinn (10J)": f"{r['Gewinn_10J']:,.0f} €"
         })
     st.dataframe(pd.DataFrame(df_data), use_container_width=True, hide_index=True)
 
@@ -341,11 +354,17 @@ else:
         with open(obj_data["PDF_Path"], "rb") as f:
             cp.download_button("📄 Exposé PDF", f, file_name="Expose.pdf", use_container_width=True)
 
-    if obj_data.get("Bild_URLs"):
+    # --- FEHLERBEHEBUNG HIER (GALERIE) ---
+    # Nur Bilder laden, die keine leeren Strings sind!
+    valid_imgs = [u for u in obj_data.get("Bild_URLs", []) if u and u.strip()]
+    if valid_imgs:
         st.markdown("---")
         cols = st.columns(4)
-        for i, u in enumerate(obj_data["Bild_URLs"]):
-            cols[i % 4].image(u, use_container_width=True)
+        for i, u in enumerate(valid_imgs):
+            try:
+                cols[i % 4].image(u, use_container_width=True)
+            except:
+                cols[i % 4].caption("Bild nicht verfügbar")
 
     st.markdown("---")
     st.header("📊 Kalkulation")
@@ -385,7 +404,7 @@ else:
     st.subheader("📋 10-Jahres-Plan")
     df_full = pd.DataFrame(res["Detail"])
     
-    # HIER IST DER FEHLERBEHOBENE CODE FÜR DIE DETAIL-TABELLE:
+    # --- FEHLERBEHEBUNG HIER (TABELLE) ---
     st.dataframe(
         df_full.head(10)[["Laufzeit", "Miete (mtl.)", "CF (vor Steuer)", "CF (nach Steuer)", "Restschuld"]],
         column_config={
@@ -404,6 +423,7 @@ else:
         d20 = res["Detail"][19]
         c2.write(f"**Jahr 20:** Restschuld {d20['Restschuld']:,.0f} € | Equity {d20['Equity']:,.0f} €")
 
+    # EDIT AREA
     st.markdown("---")
     st.header("⚙️ Daten ändern")
     with st.expander("📝 Stammdaten & Status bearbeiten", expanded=False):
@@ -413,7 +433,10 @@ else:
         n_link = st.text_input("Link", value=obj_data.get("Link", ""))
         n_imgs = st.text_area("Bilder (URLs)", value="\n".join(obj_data.get("Bild_URLs", [])))
         if st.button("💾 Speichern"):
-            OBJEKTE[sel].update({"Archiviert": is_archived, "Kaufpreis": n_kp, "Link": n_link, "Bild_URLs": n_imgs.split("\n")})
+            # --- FEHLERBEHEBUNG HIER (SPEICHERN) ---
+            # Leere Zeilen rausfiltern beim Speichern
+            clean_imgs = [x.strip() for x in n_imgs.split("\n") if x.strip()]
+            OBJEKTE[sel].update({"Archiviert": is_archived, "Kaufpreis": n_kp, "Link": n_link, "Bild_URLs": clean_imgs})
             save_data(OBJEKTE)
             st.success("Gespeichert!")
             st.rerun()
