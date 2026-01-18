@@ -6,6 +6,7 @@ import tempfile
 import json
 import os
 from datetime import date
+import plotly.express as px
 
 # ==========================================
 # 0. SICHERHEIT / LOGIN
@@ -14,7 +15,6 @@ def check_password():
     try:
         correct_password = st.secrets["password"]
     except:
-        # Fallback für lokales Testen ohne secrets.toml
         correct_password = "DeinGeheimesPasswort123"
 
     def password_entered():
@@ -41,22 +41,18 @@ st.set_page_config(page_title="Immo-Cockpit Pro", layout="wide", initial_sidebar
 
 if not check_password(): st.stop()
 
-# CSS Hack für schönere Selectboxen & Tabellen-Farben
-st.markdown("""
-<style>
-div[data-baseweb="select"] > div {border-color: #808495 !important; border-width: 1px !important;}
-</style>
-""", unsafe_allow_html=True)
+st.markdown("""<style>div[data-baseweb="select"] > div {border-color: #808495 !important; border-width: 1px !important;}</style>""", unsafe_allow_html=True)
 
 START_JAHR = 2026
-DATA_FILE = "portfolio_data_final_v4.json" # Neue Datei
+# WICHTIG: Version hochgesetzt auf v6, damit neue Daten geladen werden!
+DATA_FILE = "portfolio_data_final_v6.json" 
 MEDIA_DIR = "expose_files"
 
 if not os.path.exists(MEDIA_DIR):
     os.makedirs(MEDIA_DIR)
 
 # ==========================================
-# 0. DATEN (DIE OBJEKTE)
+# 0. DATEN (AKTUELLE WERTE)
 # ==========================================
 DEFAULT_OBJEKTE = {
     "Meckelfeld (Ziel-Preis 160k)": {
@@ -178,7 +174,12 @@ DEFAULT_OBJEKTE = {
         "Marktmiete_m2": 14.50, "Energie_Info": "Gas + Solar (Bj 2016), Klasse B (est.)",
         "Status": "Frei ab 02/2026 (Provisionsfrei)",
         "Link": "https://www.kleinanzeigen.de/s-anzeige/moderne-2-zimmer-wohnung-inkl-aussenstellplatz-in-begehrter-lage/3296695424-196-2807", 
-        "Bild_URLs": [], "PDF_Path": "",
+        "Bild_URLs": [
+            "https://img.kleinanzeigen.de/api/v1/prod-ads/images/b8/b8d9237e-390c-4f6d-9420-a262fb63e7c4?rule=$_59.AUTO",
+            "https://img.kleinanzeigen.de/api/v1/prod-ads/images/44/44e6c91e-dcb6-4d18-b759-ec288cf895fc?rule=$_59.AUTO",
+            "https://img.kleinanzeigen.de/api/v1/prod-ads/images/c2/c2c20f6e-904f-43df-b3f6-815ae965458a?rule=$_59.AUTO",
+            "https://img.kleinanzeigen.de/api/v1/prod-ads/images/9d/9d538360-5d4e-4cac-92c3-f672fc0d3a5e?rule=$_59.AUTO"
+        ], "PDF_Path": "",
         "Erfassungsdatum": "2026-01-11", "Archiviert": False,
         "Basis_Info": """Baujahr 2016 bestätigt. 14 Einheiten. Frei ab Feb 2026. LAGE: Direkt an B73 (laut!).""",
         "Summary_Case": """'Sorglos-Paket'. Wertsicherung durch moderne Substanz & günstigen Einkauf.""",
@@ -242,7 +243,6 @@ def load_data():
             for k, v in DEFAULT_OBJEKTE.items():
                 if k not in merged:
                     merged[k] = v
-                # Backfill new fields if missing in saved data
                 if "Erfassungsdatum" not in merged[k]: merged[k]["Erfassungsdatum"] = date.today().strftime("%Y-%m-%d")
                 if "Archiviert" not in merged[k]: merged[k]["Archiviert"] = False
             return merged
@@ -335,11 +335,10 @@ def calculate_investment(obj_name, params):
             rent_yr = rent_monthly * 12
             
         elif is_elmshorn:
-            # Staffel: 2026->765, 2027->815
             if jahr == 2026: rent_yr = 9180 
             elif jahr == 2027: rent_yr = 9780 
             elif jahr > 2027: rent_yr = 9780 * (1 + miet_st)**(i - 2) 
-            else: rent_yr = rent_start * 12 # Fallback
+            else: rent_yr = rent_start * 12
             
         else:
             rent_yr = rent_start * (1 + miet_st)**i
@@ -395,7 +394,6 @@ if page == "📊 Portfolio Übersicht":
     st.title("📊 Immobilien-Portfolio Dashboard")
     results = [calculate_investment(k, v) for k, v in OBJEKTE.items()]
     
-    # Nur aktive Deals für die Metriken zählen
     active_results = [r for r in results if not r["Archiviert"]]
     
     tot_invest = sum(r["Invest"] for r in active_results)
@@ -407,10 +405,29 @@ if page == "📊 Portfolio Übersicht":
         c2.metric("Ø Cashflow (Aktive)", f"{tot_cf:,.0f} €", delta_color="normal")
         c3.metric("Aktive Objekte", len(active_results))
     
-    # Styling Funktion für DataFrame
-    def color_archiv(val):
-        color = '#ffcccc' if val == "❌ Ja" else ''
-        return f'background-color: {color}'
+    if len(active_results) > 0:
+        st.markdown("---")
+        st.subheader("📈 Portfolio-Matrix (Bubble Chart)")
+        
+        bubble_data = []
+        for r in active_results:
+            bubble_data.append({
+                "Objekt": r["Name"],
+                "Kaufpreis": r["KP"],
+                "Rendite (%)": round(r["Rendite"], 2),
+                "Invest (Größe)": r["Invest"],
+                "Cashflow (Farbe)": "Positiv" if r["Avg_CF"] >= 0 else "Negativ"
+            })
+        df_bubble = pd.DataFrame(bubble_data)
+        
+        fig = px.scatter(
+            df_bubble, x="Kaufpreis", y="Rendite (%)", size="Invest (Größe)", 
+            color="Cashflow (Farbe)", hover_name="Objekt", size_max=60,
+            color_discrete_map={"Positiv": "green", "Negativ": "red"}
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown("---")
 
     df_data = []
     for r in results:
@@ -439,16 +456,14 @@ else:
     sel = st.selectbox("Objekt wählen:", list(OBJEKTE.keys()))
     obj_data = OBJEKTE[sel]
     
-    # Archiv Status Anzeige
     if obj_data.get("Archiviert"):
-        st.error("❌ Dieses Objekt ist als 'Abgelehnt/Archiviert' markiert.")
+        st.error("❌ Dieses Objekt ist archiviert. Die Berechnungen werden angezeigt, zählen aber nicht zum Portfolio.")
     
     # ----------------------------------------------------
     # STECKBRIEF (INKL. INVEST-BERECHNUNG)
     # ----------------------------------------------------
     st.markdown("### 📍 Objekt-Steckbrief")
     
-    # KAUFPREIS & NK BERECHNUNG FÜR HERLEITUNG
     kp_val = obj_data["Kaufpreis"]
     nk_quote = obj_data["Nebenkosten_Quote"]
     nk_wert = kp_val * nk_quote
@@ -493,10 +508,8 @@ else:
     with st.expander("📝 Stammdaten & Status bearbeiten", expanded=True):
         c_e1, c_e2 = st.columns(2)
         
-        # STATUS CHECKBOX
         is_archived = c_e1.checkbox("❌ Als 'Abgelehnt/Archiviert' markieren", value=obj_data.get("Archiviert", False))
         
-        # DATE PICKER
         try:
             curr_date = date.fromisoformat(obj_data.get("Erfassungsdatum", "2026-01-01"))
         except:
@@ -525,77 +538,74 @@ else:
             st.rerun()
 
     # ----------------------------------------------------
-    # LIVE-CALC & JAHRESPLÄNE
+    # LIVE-CALC & JAHRESPLÄNE (JETZT IMMER SICHTBAR!)
     # ----------------------------------------------------
-    if not obj_data.get("Archiviert"):
-        st.markdown("---")
-        st.header("📊 Kalkulation & Szenarien")
+    st.markdown("---")
+    st.header("📊 Kalkulation & Szenarien")
+    
+    with st.expander("⚙️ Parameter anpassen (Live)", expanded=True):
+        c1, c2, c3, c4 = st.columns(4)
+        curr_z = obj_data.get("Zins_Indiv", global_zins)
+        curr_a = obj_data.get("AfA_Satz", 0.02)
+        curr_m = obj_data.get("Mietsteigerung", 0.02)
+        curr_w = obj_data.get("Wertsteigerung_Immo", 0.02)
+
+        new_z = c1.slider("Zins (%)", 1.0, 6.0, curr_z*100, 0.1, key=f"z_{sel}") / 100
+        new_a = c2.slider("AfA (%)", 1.0, 5.0, curr_a*100, 0.1, key=f"a_{sel}") / 100
         
-        with st.expander("⚙️ Parameter anpassen (Live)", expanded=True):
-            c1, c2, c3, c4 = st.columns(4)
-            curr_z = obj_data.get("Zins_Indiv", global_zins)
-            curr_a = obj_data.get("AfA_Satz", 0.02)
-            curr_m = obj_data.get("Mietsteigerung", 0.02)
-            curr_w = obj_data.get("Wertsteigerung_Immo", 0.02)
-
-            new_z = c1.slider("Zins (%)", 1.0, 6.0, curr_z*100, 0.1, key=f"z_{sel}") / 100
-            new_a = c2.slider("AfA (%)", 1.0, 5.0, curr_a*100, 0.1, key=f"a_{sel}") / 100
+        if "Meckelfeld" in sel:
+            st.caption("ℹ️ Meckelfeld nutzt feste Stufen (2027/29/32)")
+            new_m = curr_m 
+        else:
+            new_m = c3.slider("Mietsteigerung (%)", 0.0, 5.0, curr_m*100, 0.1, key=f"m_{sel}") / 100
             
-            # Hinweis bei Meckelfeld, dass Mietsteigerung hier inaktiv ist
-            if "Meckelfeld" in sel:
-                st.caption("ℹ️ Meckelfeld nutzt feste Stufen (2027/29/32)")
-                new_m = curr_m # Keine Änderung
-            else:
-                new_m = c3.slider("Mietsteigerung (%)", 0.0, 5.0, curr_m*100, 0.1, key=f"m_{sel}") / 100
-                
-            new_w = c4.slider("Wertsteigerung (%)", 0.0, 6.0, curr_w*100, 0.1, key=f"w_{sel}") / 100
-            
-            if (new_z != curr_z) or (new_a != curr_a) or (new_m != curr_m) or (new_w != curr_w):
-                OBJEKTE[sel]["Zins_Indiv"] = new_z
-                OBJEKTE[sel]["AfA_Satz"] = new_a
-                OBJEKTE[sel]["Mietsteigerung"] = new_m
-                OBJEKTE[sel]["Wertsteigerung_Immo"] = new_w
-                save_data(OBJEKTE)
-                st.rerun()
-
-        res = calculate_investment(sel, OBJEKTE[sel])
+        new_w = c4.slider("Wertsteigerung (%)", 0.0, 6.0, curr_w*100, 0.1, key=f"w_{sel}") / 100
         
-        # 1. TOP KPIs
-        k1, k2, k3, k4 = st.columns(4)
-        k1.metric("Ø Monatl. CF (Nach Steuer)", f"{res['Avg_CF']:,.0f} €")
-        k2.metric("EKR (10J)", f"{res['CAGR']:.2f} %")
-        k3.metric("Miete/m²", f"{(res['Detail'][0]['Miete (mtl.)']/obj_data['qm']):.2f} €")
-        k4.metric("Gewinn nach 10J", f"{res['Gewinn_10J']:,.0f} €")
+        if (new_z != curr_z) or (new_a != curr_a) or (new_m != curr_m) or (new_w != curr_w):
+            OBJEKTE[sel]["Zins_Indiv"] = new_z
+            OBJEKTE[sel]["AfA_Satz"] = new_a
+            OBJEKTE[sel]["Mietsteigerung"] = new_m
+            OBJEKTE[sel]["Wertsteigerung_Immo"] = new_w
+            save_data(OBJEKTE)
+            st.rerun()
 
-        # 2. HAUPT-TABELLE
-        df_full = pd.DataFrame(res["Detail"])
-        df_10 = df_full.head(10)[["Laufzeit", "Miete (mtl.)", "CF (vor Steuer)", "CF (nach Steuer)", "Restschuld"]]
+    res = calculate_investment(sel, OBJEKTE[sel])
+    
+    k1, k2, k3, k4 = st.columns(4)
+    k1.metric("Ø Monatl. CF (Nach Steuer)", f"{res['Avg_CF']:,.0f} €")
+    k2.metric("EKR (10J)", f"{res['CAGR']:.2f} %")
+    k3.metric("Miete/m²", f"{(res['Detail'][0]['Miete (mtl.)']/obj_data['qm']):.2f} €")
+    k4.metric("Gewinn nach 10J", f"{res['Gewinn_10J']:,.0f} €")
+
+    # 2. HAUPT-TABELLE
+    df_full = pd.DataFrame(res["Detail"])
+    df_10 = df_full.head(10)[["Laufzeit", "Miete (mtl.)", "CF (vor Steuer)", "CF (nach Steuer)", "Restschuld"]]
+    
+    st.dataframe(
+        df_10.style.format({
+            "Miete (mtl.)": "{:,.2f} €",
+            "CF (vor Steuer)": "{:,.0f} €",
+            "CF (nach Steuer)": "{:,.0f} €",
+            "Restschuld": "{:,.0f} €"
+        }),
+        use_container_width=True,
+        hide_index=True
+    )
+
+    # 3. AUSBLICK (WIEDER DA!)
+    with st.expander("🔮 Ausblick: Jahr 15 & Jahr 20 ansehen"):
+        c_15, c_20 = st.columns(2)
         
-        st.dataframe(
-            df_10.style.format({
-                "Miete (mtl.)": "{:,.2f} €",
-                "CF (vor Steuer)": "{:,.0f} €",
-                "CF (nach Steuer)": "{:,.0f} €",
-                "Restschuld": "{:,.0f} €"
-            }),
-            use_container_width=True,
-            hide_index=True
-        )
-
-        # 3. AUSBLICK (WIEDER EINGEFÜGT)
-        with st.expander("🔮 Ausblick: Jahr 15 & Jahr 20 ansehen"):
-            c_15, c_20 = st.columns(2)
+        with c_15:
+            st.markdown("#### Jahr 15")
+            d15 = res["Detail"][14]
+            st.write(f"**Miete:** {d15['Miete (mtl.)']:,.2f} €")
+            st.write(f"**Restschuld:** {d15['Restschuld']:,.0f} €")
+            st.write(f"**Equity:** {d15['Equity']:,.0f} €")
             
-            with c_15:
-                st.markdown("#### Jahr 15")
-                d15 = res["Detail"][14]
-                st.write(f"**Miete:** {d15['Miete (mtl.)']:,.2f} €")
-                st.write(f"**Restschuld:** {d15['Restschuld']:,.0f} €")
-                st.write(f"**Equity:** {d15['Equity']:,.0f} €")
-                
-            with c_20:
-                st.markdown("#### Jahr 20")
-                d20 = res["Detail"][19]
-                st.write(f"**Miete:** {d20['Miete (mtl.)']:,.2f} €")
-                st.write(f"**Restschuld:** {d20['Restschuld']:,.0f} €")
-                st.write(f"**Equity:** {d20['Equity']:,.0f} €")
+        with c_20:
+            st.markdown("#### Jahr 20")
+            d20 = res["Detail"][19]
+            st.write(f"**Miete:** {d20['Miete (mtl.)']:,.2f} €")
+            st.write(f"**Restschuld:** {d20['Restschuld']:,.0f} €")
+            st.write(f"**Equity:** {d20['Equity']:,.0f} €")
