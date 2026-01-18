@@ -23,12 +23,16 @@ def check_password():
     try:
         correct_password = st.secrets["password"]
     except:
-        correct_password = "123" # Fallback
+        correct_password = "DeinGeheimesPasswort123"
+
+    def password_entered():
+        if st.session_state["password"] == correct_password:
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]
+        else:
+            st.session_state["password_correct"] = False
 
     if "password_correct" not in st.session_state:
-        st.session_state["password_correct"] = False
-
-    if not st.session_state["password_correct"]:
         st.text_input("🔒 Passwort:", type="password", key="pwd_input")
         if st.session_state.get("pwd_input") == correct_password:
             st.session_state["password_correct"] = True
@@ -39,7 +43,6 @@ def check_password():
 if not check_password(): st.stop()
 
 START_JAHR = 2026
-# Dateiname bleibt gleich wie bei der letzten Version, damit deine Daten erhalten bleiben
 DATA_FILE = "portfolio_data_master_v1.json" 
 MEDIA_DIR = "expose_files"
 
@@ -228,10 +231,13 @@ def calculate_investment(obj_name, params):
     equity_10 = res_10["Equity"] + sum([d["CF (nach Steuer)"] for d in data[:10]])
     cagr = ((equity_10 / invest)**(0.1) - 1) * 100 if invest > 0 else 0
     avg_cf = sum([d["CF (nach Steuer)"] for d in data[:10]]) / 120
+    # NEU: Cashflow vor Steuer Durchschnitt berechnen
+    avg_cf_pre = sum([d["CF (vor Steuer)"] for d in data[:10]]) / 120
     
     return {
         "Name": obj_name, "Invest": invest, "KP": kp, "Rendite": (rent_start/kp)*100,
-        "CAGR": cagr, "Avg_CF": avg_cf, "Gewinn_10J": equity_10 - invest,
+        "CAGR": cagr, "Avg_CF": avg_cf, "Avg_CF_Pre": avg_cf_pre, # Hinzugefügt
+        "Gewinn_10J": equity_10 - invest,
         "Detail": data, "Params": params,
         "Used_Zins": zins, "Archiviert": params.get("Archiviert", False),
         "Marktmiete": params.get("Marktmiete_m2", 0)
@@ -288,7 +294,6 @@ if page == "📊 Portfolio Übersicht":
             
             df_wealth = pd.DataFrame({"Jahr": years, "Netto-Vermögen": list(agg_equity.values()), "Bank-Schulden": list(agg_debt.values())})
             
-            # --- FIX: KORREKTER SPALTENNAME "Bank-Schulden" ---
             fig_w = go.Figure()
             fig_w.add_trace(go.Scatter(x=df_wealth["Jahr"], y=df_wealth["Netto-Vermögen"], stackgroup='one', name='Netto-Vermögen', line=dict(color='#2E7D32', width=0)))
             fig_w.add_trace(go.Scatter(x=df_wealth["Jahr"], y=df_wealth["Bank-Schulden"], stackgroup='one', name='Bank-Schulden', line=dict(color='#C62828', width=0)))
@@ -305,6 +310,7 @@ if page == "📊 Portfolio Übersicht":
             "Kaufpreis": f"{r['KP']:,.0f} €",
             "Invest (EK)": f"{r['Invest']:,.0f} €",
             "Rendite": f"{r['Rendite']:.2f} %",
+            "Ø CF (Vor St.)": f"{r['Avg_CF_Pre']:,.0f} €", # NEU: CF vor Steuer
             "Ø CF (Nach St.)": f"{r['Avg_CF']:,.0f} €",
             "Gewinn (10J)": f"{r['Gewinn_10J']:,.0f} €"
         })
@@ -319,7 +325,7 @@ else:
     if obj_data.get("Archiviert"):
         st.warning("⚠️ Dieses Objekt liegt im Archiv (Abgelehnt/Vergleich).")
 
-    # --- WIEDER DA: MIETE VS MARKTMIETE ---
+    # --- MIETE VS MARKTMIETE ---
     curr_miete_m2 = obj_data["Miete_Start"] / obj_data["qm"]
     markt_miete_m2 = obj_data.get("Marktmiete_m2", 0)
     miet_potenzial = ((markt_miete_m2 - curr_miete_m2) / curr_miete_m2) * 100 if curr_miete_m2 > 0 else 0
@@ -335,7 +341,7 @@ else:
     with c3:
         st.metric("Marktmiete (Potenzial)", f"{markt_miete_m2:.2f} €/m²", delta=f"{miet_potenzial:.1f} % Luft")
 
-    # --- WIEDER DA: INVEST DETAIL ---
+    # --- INVEST DETAIL ---
     kp_val = obj_data["Kaufpreis"]
     nk_quote = obj_data["Nebenkosten_Quote"]
     nk_wert = kp_val * nk_quote
@@ -355,7 +361,7 @@ else:
     if obj_data.get("Link"):
         cl.markdown(f"""<a href="{obj_data['Link']}" target="_blank" style="text-decoration: none;"><div style="background-color: #0052cc; color: white; padding: 8px; text-align: center; border-radius: 5px;">↗ Zum Inserat</div></a>""", unsafe_allow_html=True)
     
-    # --- GALERIE FIX (LEERE URLS ABFANGEN) ---
+    # --- GALERIE FIX ---
     valid_imgs = [u for u in obj_data.get("Bild_URLs", []) if u and u.strip()]
     if valid_imgs:
         st.markdown("---")
@@ -367,7 +373,7 @@ else:
     st.markdown("---")
     st.header("📊 Kalkulation")
     
-    # --- WIEDER DA: MIETSTEIGERUNG SLIDER ---
+    # --- MIETSTEIGERUNG SLIDER ---
     with st.expander("⚙️ Parameter anpassen (Live)", expanded=True):
         c1, c2, c3, c4 = st.columns(4)
         curr_z = obj_data.get("Zins_Indiv", global_zins)
@@ -378,7 +384,6 @@ else:
         new_z = c1.slider("Zins (%)", 1.0, 6.0, curr_z*100, 0.1, key=f"z_{sel}") / 100
         new_a = c2.slider("AfA (%)", 1.0, 5.0, curr_a*100, 0.1, key=f"a_{sel}") / 100
         
-        # Logik: Slider nur aktiv, wenn keine Spezial-Miete
         if "Meckelfeld" in sel or "Elmshorn" in sel:
              st.caption("ℹ️ Fixe Mietstaffel/Treppe aktiv (Slider inaktiv)")
              new_m = curr_m 
@@ -406,7 +411,7 @@ else:
     st.subheader("📋 10-Jahres-Plan")
     df_full = pd.DataFrame(res["Detail"])
     
-    # --- TABLE FIX (Kein .style.format, sondern column_config) ---
+    # --- TABLE FIX ---
     st.dataframe(
         df_full.head(10)[["Laufzeit", "Miete (mtl.)", "CF (vor Steuer)", "CF (nach Steuer)", "Restschuld"]],
         column_config={
@@ -434,7 +439,6 @@ else:
         n_link = st.text_input("Link", value=obj_data.get("Link", ""))
         n_imgs = st.text_area("Bilder (URLs)", value="\n".join(obj_data.get("Bild_URLs", [])))
         if st.button("💾 Speichern"):
-            # Clean images (remove empty lines)
             clean_imgs = [x.strip() for x in n_imgs.split("\n") if x.strip()]
             OBJEKTE[sel].update({"Archiviert": is_archived, "Kaufpreis": n_kp, "Link": n_link, "Bild_URLs": clean_imgs})
             save_data(OBJEKTE)
