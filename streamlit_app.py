@@ -49,7 +49,7 @@ div[data-baseweb="select"] > div {border-color: #808495 !important; border-width
 """, unsafe_allow_html=True)
 
 START_JAHR = 2026
-DATA_FILE = "portfolio_data_final_v3.json" # Neue Datei
+DATA_FILE = "portfolio_data_final_v4.json" # Neue Datei
 MEDIA_DIR = "expose_files"
 
 if not os.path.exists(MEDIA_DIR):
@@ -581,3 +581,21 @@ else:
             use_container_width=True,
             hide_index=True
         )
+
+        # 3. AUSBLICK (WIEDER EINGEFÜGT)
+        with st.expander("🔮 Ausblick: Jahr 15 & Jahr 20 ansehen"):
+            c_15, c_20 = st.columns(2)
+            
+            with c_15:
+                st.markdown("#### Jahr 15")
+                d15 = res["Detail"][14]
+                st.write(f"**Miete:** {d15['Miete (mtl.)']:,.2f} €")
+                st.write(f"**Restschuld:** {d15['Restschuld']:,.0f} €")
+                st.write(f"**Equity:** {d15['Equity']:,.0f} €")
+                
+            with c_20:
+                st.markdown("#### Jahr 20")
+                d20 = res["Detail"][19]
+                st.write(f"**Miete:** {d20['Miete (mtl.)']:,.2f} €")
+                st.write(f"**Restschuld:** {d20['Restschuld']:,.0f} €")
+                st.write(f"**Equity:** {d20['Equity']:,.0f} €")
