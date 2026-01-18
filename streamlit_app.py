@@ -10,7 +10,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 # ==========================================
-# 0. KONFIGURATION & CSS (THE SAAS LOOK)
+# 0. KONFIGURATION & CSS (THE SAAS LOOK - FIXED)
 # ==========================================
 st.set_page_config(
     page_title="ImmoAsset Pro", 
@@ -19,76 +19,96 @@ st.set_page_config(
     page_icon="🏢"
 )
 
-# --- CUSTOM CSS FÜR SAAS-LOOK ---
+# --- CUSTOM CSS (JETZT MIT TEXT-FARB-ZWANG) ---
 st.markdown("""
 <style>
-    /* 1. GRUNDGERÜST & FARBEN */
+    /* 1. GRUNDGERÜST: Erzwinge hellen Hintergrund & dunkle Schrift */
     .stApp {
-        background-color: #f8f9fa; /* Sehr helles Grau für den Hintergrund */
+        background-color: #f8f9fa;
     }
     
-    /* 2. SIDEBAR */
+    /* Alle Standard-Texte dunkel machen (gegen Dark-Mode-Bug) */
+    .stMarkdown, .stText, p, h1, h2, h3, h4, h5, h6, li, span {
+        color: #0f172a !important; /* Dunkles Slate */
+    }
+
+    /* 2. SIDEBAR (Dunkel bleiben, Schrift hell) */
     section[data-testid="stSidebar"] {
-        background-color: #1e293b; /* Dunkles Slate-Blue */
-        color: white;
+        background-color: #1e293b;
     }
-    section[data-testid="stSidebar"] h1, section[data-testid="stSidebar"] h2, section[data-testid="stSidebar"] label {
-        color: #e2e8f0 !important;
-    }
-    
-    /* 3. KARTEN-DESIGN (CONTAINER) */
-    div[data-testid="stVerticalBlock"] > div[style*="background-color"] {
-        /* Dies zielt auf Container ab, wenn wir ihnen background geben würden - Streamlit ist da tricky.
-           Wir nutzen stattdessen 'st.container(border=True)' Features. */
+    section[data-testid="stSidebar"] .stMarkdown, 
+    section[data-testid="stSidebar"] p, 
+    section[data-testid="stSidebar"] h1, 
+    section[data-testid="stSidebar"] h2, 
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] span {
+        color: #f1f5f9 !important; /* Helles Weiß/Grau */
     }
     
-    /* Metric Cards Styling */
+    /* 3. METRIC CARDS (Das war das Problem!) */
     div[data-testid="stMetric"] {
         background-color: #ffffff;
         padding: 15px;
         border-radius: 10px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        border: 1px solid #e5e7eb;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        border: 1px solid #e2e8f0;
     }
-    
+    /* Label der Metrik (klein oben) */
+    div[data-testid="stMetricLabel"] p {
+        color: #64748b !important; /* Mittelgrau */
+        font-size: 0.9rem;
+    }
+    /* Wert der Metrik (groß) */
+    div[data-testid="stMetricValue"] div {
+        color: #0f172a !important; /* Tiefschwarz/Blau */
+        font-weight: 700;
+    }
+    /* Delta Wert (klein unten) */
+    div[data-testid="stMetricDelta"] div {
+        color: #10b981 !important; /* Grün als Standard, wird von Streamlit teils überschrieben */
+    }
+
     /* 4. TABELLEN */
     div[data-testid="stDataFrame"] {
         background-color: white;
         padding: 10px;
         border-radius: 10px;
+        border: 1px solid #e2e8f0;
         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
-    
-    /* 5. TEXT STYLING */
-    h1, h2, h3 {
-        font-family: 'Inter', sans-serif;
-        color: #111827;
-        font-weight: 700;
+    /* Tabellen-Text erzwingen */
+    div[data-testid="stDataFrame"] div {
+        color: #334155 !important;
     }
-    
+
+    /* 5. TABS */
+    button[data-baseweb="tab"] {
+        color: #64748b;
+        font-weight: 500;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] {
+        color: #2563eb !important; /* Blau für aktiven Tab */
+        border-bottom-color: #2563eb !important;
+    }
+
     /* 6. BUTTONS */
     .stButton button {
         background-color: #2563eb;
-        color: white;
+        color: white !important;
         border-radius: 6px;
         border: none;
         font-weight: 500;
-        transition: all 0.2s;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .stButton button:hover {
         background-color: #1d4ed8;
-        box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
     }
 
-    /* Custom Badge für Status */
-    .status-badge {
-        padding: 4px 8px;
-        border-radius: 12px;
-        font-size: 0.8rem;
-        font-weight: 600;
+    /* 7. STATUS BADGES & ALERTS */
+    div[data-testid="stAlert"] {
+        padding: 10px;
+        border-radius: 8px;
     }
-    .status-active { background-color: #dcfce7; color: #166534; }
-    .status-archive { background-color: #fee2e2; color: #991b1b; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -99,7 +119,7 @@ def check_password():
     try:
         correct_password = st.secrets["password"]
     except:
-        correct_password = "123" # Dev Fallback
+        correct_password = "123"
 
     if "password_correct" not in st.session_state:
         st.session_state["password_correct"] = False
@@ -107,7 +127,7 @@ def check_password():
     if not st.session_state["password_correct"]:
         c1, c2, c3 = st.columns([1,1,1])
         with c2:
-            st.title("🔒 Login")
+            st.markdown("### 🔒 Login")
             pwd = st.text_input("Passwort eingeben:", type="password")
             if pwd == correct_password:
                 st.session_state["password_correct"] = True
@@ -122,7 +142,7 @@ DATA_FILE = "portfolio_data_v6_saas.json"
 MEDIA_DIR = "expose_files"
 if not os.path.exists(MEDIA_DIR): os.makedirs(MEDIA_DIR)
 
-# --- DEFAULT DATEN (Struktur identisch zu vorher, nur der Vollständigkeit halber) ---
+# --- DEFAULT DATEN ---
 DEFAULT_OBJEKTE = {
     "Meckelfeld (Ziel-Preis 160k)": {
         "Adresse": "Am Bach, 21217 Seevetal", "qm": 59, "zimmer": 2.0, "bj": 1965, "Kaufpreis": 160000, "Nebenkosten_Quote": 0.07, 
@@ -282,15 +302,14 @@ def calculate_investment(obj_name, params, global_zins, global_tilgung, global_s
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/2620/2620602.png", width=60) # Placeholder Logo
     st.markdown("### ImmoAsset **Pro**")
+    st.caption("v6.1 - SaaS Edition")
     st.markdown("---")
     
     menu = st.radio(
         "Hauptmenü", 
         ["Dashboard", "Objekt-Details", "Einstellungen"], 
-        index=0,
-        label_visibility="collapsed"
+        index=0
     )
     
     st.markdown("---")
@@ -306,7 +325,7 @@ archive_results = [r for r in results if r["Archiviert"]]
 
 # --- PAGE: DASHBOARD ---
 if menu == "Dashboard":
-    st.markdown("## 👋 Willkommen zurück, Chef!")
+    st.title("👋 Willkommen zurück!")
     st.markdown("Hier ist der aktuelle Status deines Portfolios.")
     
     # 1. KPI ROW (Cards)
@@ -318,7 +337,7 @@ if menu == "Dashboard":
     with c1: st.metric("Invest (Active)", f"{tot_invest/1000:,.0f}k €", delta=f"{len(active_results)} Units")
     with c2: st.metric("Ø Cashflow / Monat", f"{tot_cf:,.0f} €", delta_color="normal")
     with c3: st.metric("Ø EKR (10J)", f"{avg_ekr:.1f} %", delta="Ziel: >8%")
-    with c4: st.metric("Objekte auf Watchlist", f"{len(archive_results)}", delta_color="off")
+    with c4: st.metric("Watchlist", f"{len(archive_results)}", delta_color="off")
     
     st.markdown("---")
 
@@ -341,7 +360,7 @@ if menu == "Dashboard":
         fig_w = go.Figure()
         fig_w.add_trace(go.Scatter(x=df_wealth["Jahr"], y=df_wealth["Netto-Vermögen"], stackgroup='one', name='Netto-Vermögen', line=dict(color='#10b981', width=0)))
         fig_w.add_trace(go.Scatter(x=df_wealth["Jahr"], y=df_wealth["Bank-Schulden"], stackgroup='one', name='Bank-Schulden', line=dict(color='#ef4444', width=0)))
-        fig_w.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=0, r=0, t=0, b=0), height=300, legend=dict(orientation="h", y=1.1))
+        fig_w.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=0, r=0, t=0, b=0), height=300, legend=dict(orientation="h", y=1.1, font=dict(color="#0f172a")), xaxis=dict(color="#334155"), yaxis=dict(color="#334155"))
         st.plotly_chart(fig_w, use_container_width=True)
 
     with c_chart2:
@@ -354,7 +373,7 @@ if menu == "Dashboard":
             
             fig_b = px.scatter(bubble_df, x="KP", y="Rendite", size="Size", color="CF", 
                                color_continuous_scale=["#ef4444", "#10b981"], hover_name="Objekt")
-            fig_b.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(240,242,246,0.5)', height=300)
+            fig_b.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(240,242,246,0.5)', height=300, xaxis=dict(color="#334155"), yaxis=dict(color="#334155"))
             st.plotly_chart(fig_b, use_container_width=True)
         else:
             st.info("Keine aktiven Deals.")
