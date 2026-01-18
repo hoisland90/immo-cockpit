@@ -7,231 +7,156 @@ import json
 import os
 from datetime import date
 import plotly.express as px
+import plotly.graph_objects as go
 
 # ==========================================
-# 0. SICHERHEIT / LOGIN
+# 0. KONFIGURATION & CSS (THE SAAS LOOK)
+# ==========================================
+st.set_page_config(
+    page_title="ImmoAsset Pro", 
+    layout="wide", 
+    initial_sidebar_state="expanded",
+    page_icon="🏢"
+)
+
+# --- CUSTOM CSS FÜR SAAS-LOOK ---
+st.markdown("""
+<style>
+    /* 1. GRUNDGERÜST & FARBEN */
+    .stApp {
+        background-color: #f8f9fa; /* Sehr helles Grau für den Hintergrund */
+    }
+    
+    /* 2. SIDEBAR */
+    section[data-testid="stSidebar"] {
+        background-color: #1e293b; /* Dunkles Slate-Blue */
+        color: white;
+    }
+    section[data-testid="stSidebar"] h1, section[data-testid="stSidebar"] h2, section[data-testid="stSidebar"] label {
+        color: #e2e8f0 !important;
+    }
+    
+    /* 3. KARTEN-DESIGN (CONTAINER) */
+    div[data-testid="stVerticalBlock"] > div[style*="background-color"] {
+        /* Dies zielt auf Container ab, wenn wir ihnen background geben würden - Streamlit ist da tricky.
+           Wir nutzen stattdessen 'st.container(border=True)' Features. */
+    }
+    
+    /* Metric Cards Styling */
+    div[data-testid="stMetric"] {
+        background-color: #ffffff;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border: 1px solid #e5e7eb;
+    }
+    
+    /* 4. TABELLEN */
+    div[data-testid="stDataFrame"] {
+        background-color: white;
+        padding: 10px;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    
+    /* 5. TEXT STYLING */
+    h1, h2, h3 {
+        font-family: 'Inter', sans-serif;
+        color: #111827;
+        font-weight: 700;
+    }
+    
+    /* 6. BUTTONS */
+    .stButton button {
+        background-color: #2563eb;
+        color: white;
+        border-radius: 6px;
+        border: none;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    .stButton button:hover {
+        background-color: #1d4ed8;
+        box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+    }
+
+    /* Custom Badge für Status */
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    .status-active { background-color: #dcfce7; color: #166534; }
+    .status-archive { background-color: #fee2e2; color: #991b1b; }
+</style>
+""", unsafe_allow_html=True)
+
+# ==========================================
+# 0.1 LOGIN & DATA
 # ==========================================
 def check_password():
     try:
         correct_password = st.secrets["password"]
     except:
-        correct_password = "DeinGeheimesPasswort123"
-
-    def password_entered():
-        if st.session_state["password"] == correct_password:
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]
-        else:
-            st.session_state["password_correct"] = False
+        correct_password = "123" # Dev Fallback
 
     if "password_correct" not in st.session_state:
-        st.text_input("🔒 Passwort:", type="password", on_change=password_entered, key="password")
-        return False
-    elif not st.session_state["password_correct"]:
-        st.text_input("🔒 Passwort:", type="password", on_change=password_entered, key="password")
-        st.error("Falsch.")
-        return False
-    else:
-        return True
+        st.session_state["password_correct"] = False
 
-# ==========================================
-# KONFIGURATION & SETUP
-# ==========================================
-st.set_page_config(page_title="Immo-Cockpit Pro", layout="wide", initial_sidebar_state="expanded")
+    if not st.session_state["password_correct"]:
+        c1, c2, c3 = st.columns([1,1,1])
+        with c2:
+            st.title("🔒 Login")
+            pwd = st.text_input("Passwort eingeben:", type="password")
+            if pwd == correct_password:
+                st.session_state["password_correct"] = True
+                st.rerun()
+        return False
+    return True
 
 if not check_password(): st.stop()
 
-st.markdown("""<style>div[data-baseweb="select"] > div {border-color: #808495 !important; border-width: 1px !important;}</style>""", unsafe_allow_html=True)
-
 START_JAHR = 2026
-# WICHTIG: Version hochgesetzt auf v6, damit neue Daten geladen werden!
-DATA_FILE = "portfolio_data_final_v6.json" 
+DATA_FILE = "portfolio_data_v6_saas.json"
 MEDIA_DIR = "expose_files"
+if not os.path.exists(MEDIA_DIR): os.makedirs(MEDIA_DIR)
 
-if not os.path.exists(MEDIA_DIR):
-    os.makedirs(MEDIA_DIR)
-
-# ==========================================
-# 0. DATEN (AKTUELLE WERTE)
-# ==========================================
+# --- DEFAULT DATEN (Struktur identisch zu vorher, nur der Vollständigkeit halber) ---
 DEFAULT_OBJEKTE = {
     "Meckelfeld (Ziel-Preis 160k)": {
-        "Adresse": "Am Bach, 21217 Seevetal", 
-        "qm": 59, "zimmer": 2.0, "bj": 1965,
-        "Kaufpreis": 160000, "Nebenkosten_Quote": 0.07, 
-        "Renovierung": 0, "Heizung_Puffer": 2000, 
-        "AfA_Satz": 0.03, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
-        "Miete_Start": 632.50, "Hausgeld_Gesamt": 368, "Kosten_n_uml": 130, 
-        "Marktmiete_m2": 13.45, "Energie_Info": "Gas (2022/23 neu!), 181 kWh (F)",
-        "Status": "Vermietet (Treppenmiete)",
-        "Link": "https://www.kleinanzeigen.de/s-anzeige/etw-kapitalanlage-meckelfeld-eigenland-ohne-makler-/3295455732-196-2812", 
-        "Bild_URLs": [], "PDF_Path": "",
-        "Erfassungsdatum": "2026-01-18", "Archiviert": False,
-        "Basis_Info": """Heizung NEU (2022). Miete steigt in Stufen (2027: 690€, 2029: 727€). Kalkuliert mit Zielpreis 160k.""",
-        "Summary_Case": """Substanz-Deal mit extremem Steuer-Hebel. Bei 160k sehr attraktiv nach Steuer.""",
-        "Summary_Pros": """- Provisionsfrei.\n- Fixe Mietsteigerung (Treppe).\n- Heizung nagelneu.""",
-        "Summary_Cons": """- Energieklasse F (aber Heizung neu).\n- WEG-Risiko (Fassade/Bahn)."""
-    },
-    "Winsen (Optimierter Deal)": {
-        "Adresse": "21423 Winsen (Luhe)", 
-        "qm": 55.0, "zimmer": 2.0, "bj": 1985,
-        "Kaufpreis": 160080, "Nebenkosten_Quote": 0.1057, 
-        "Renovierung": 0, "Heizung_Puffer": 1000, 
-        "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
-        "Miete_Start": 633.65, 
-        "Hausgeld_Gesamt": 262, "Kosten_n_uml": 80, 
-        "Marktmiete_m2": 11.52, "Energie_Info": "Gas-Zentral, Bj 1985 (Solide)",
-        "Status": "Vermietet (Top-Miete)",
-        "Link": "https://www.immobilienscout24.de/expose/159800505", 
-        "Bild_URLs": [], "PDF_Path": "",
-        "Erfassungsdatum": "2026-01-18", "Archiviert": False,
-        "Basis_Info": """Kaufpreis fiktiv auf 160.080€ (-8%) verhandelt! Miete ist mit 11,50€/qm top.""",
-        "Summary_Case": """Durch Preisreduktion fast Cashflow-Neutral (-180€). Solide Substanz.""",
-        "Summary_Pros": """- Hohe Miete (633€).\n- Guter Zustand (Bj 85).\n- Verhandlungs-Potenzial.""",
-        "Summary_Cons": """- Maklerprovision fällig.\n- Wenig Mietsteigerungspotenzial (schon hoch)."""
-    },
-    "Pinneberg-Thesdorf (Provisionsfrei)": {
-        "Adresse": "25421 Pinneberg (Thesdorf)", 
-        "qm": 59.0, "zimmer": 2.0, "bj": 1976,
-        "Kaufpreis": 174000, "Nebenkosten_Quote": 0.085, 
-        "Renovierung": 1500, "Heizung_Puffer": 0, 
-        "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
-        "Miete_Start": 650, 
-        "Hausgeld_Gesamt": 245, "Kosten_n_uml": 85, 
-        "Marktmiete_m2": 11.50, "Energie_Info": "Bj 1976, Fernwärme/Gas",
-        "Status": "Offen (Anlage/Eigennutz)",
-        "Link": "https://www.kleinanzeigen.de/s-anzeige/anlage-oder-eigennutzung-2-zi-whg-in-pi-thesdorf/3301019183-196-786", 
-        "Bild_URLs": [], "PDF_Path": "",
-        "Erfassungsdatum": "2026-01-18", "Archiviert": False,
-        "Basis_Info": """Provisionsfrei! S-Bahn-Lage. Günstiges Hausgeld.""",
-        "Summary_Case": """Geringes Invest (nur ~15k EK). Solider Cashflow bei Neuvermietung.""",
-        "Summary_Pros": """- Provisionsfrei.\n- S-Bahn Nähe.\n- Hausgeld moderat.""",
-        "Summary_Cons": """- Baujahr 1976 (Beton-Charme).\n- Miete ist Schätzwert."""
-    },
-    "Buxtehude (5-Zi Volumen-Deal)": {
-        "Adresse": "Stader Str., 21614 Buxtehude", 
-        "qm": 109.07, "zimmer": 5.0, "bj": 1972,
-        "Kaufpreis": 236000, "Nebenkosten_Quote": 0.1057, 
-        "Renovierung": 0, "Heizung_Puffer": 2000, 
-        "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
-        "Miete_Start": 925, 
-        "Hausgeld_Gesamt": 380, "Kosten_n_uml": 120, 
-        "Marktmiete_m2": 10.00, "Energie_Info": "Fernwärme (Bj 1972), Klasse F",
-        "Status": "Vermietet seit 2007",
-        "Link": "https://www.kleinanzeigen.de/s-anzeige/vermietete-eigentumswohnung-in-buxtehude/3299469372-196-3328", 
-        "Bild_URLs": [], "PDF_Path": "",
-        "Erfassungsdatum": "2026-01-12", "Archiviert": False,
-        "Basis_Info": """Riesige Fläche für 2.163€/qm. Langjähriger Mieter (Potenzial).""",
-        "Summary_Case": """Substanz-Deal. Günstiger Einkauf, aber Energie-Risiko.""",
-        "Summary_Pros": """- Preis/qm sehr niedrig (2.163€).\n- 5 Zimmer (selten).""",
-        "Summary_Cons": """- Energieklasse F (Sanierungsdruck).\n- Alter Mietvertrag."""
-    },
-    "Stade (4-Zi Leerstand/Top-Zustand)": {
-        "Adresse": "Köhnshöhe 10a, 21680 Stade", 
-        "qm": 87.0, "zimmer": 3.5, "bj": 1972,
-        "Kaufpreis": 239000, "Nebenkosten_Quote": 0.07, 
-        "Renovierung": 0, "Heizung_Puffer": 0, 
-        "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
-        "Miete_Start": 950, 
-        "Hausgeld_Gesamt": 286, "Kosten_n_uml": 105, 
-        "Marktmiete_m2": 11.50, "Energie_Info": "Öl-Zentralheizung (Bj 1972), Klasse E",
-        "Status": "Leerstehend (Sofort neu vermietbar)",
-        "Link": "https://www.kleinanzeigen.de/s-anzeige/einziehen-wohlfuehlen-moderne-4-zimmer-wohnung-in-toplage-/3282261577-196-2829", 
-        "Bild_URLs": [], "PDF_Path": "",
-        "Erfassungsdatum": "2026-01-10", "Archiviert": False,
-        "Basis_Info": """Provisionsfrei! Leerstand = Chance auf sofortige Marktmiete. Hausgeld extrem niedrig.""",
-        "Summary_Case": """Cashflow-Case durch Neuvermietung. Risiko: Ölheizung in Hochhaus-Siedlung.""",
-        "Summary_Pros": """- Keine Maklergebühr.\n- Kein Sanierungsstau in der Wohnung.\n- Sofort ca. 11€/qm realisierbar.""",
-        "Summary_Cons": """- Lage (Hochhaus-Charakter).\n- Ölheizung (Zukunfts-Risiko)."""
-    },
-    "Stade (Altbau-Schnapper)": {
-        "Adresse": "Zentrumsnah, 21680 Stade", 
-        "qm": 67.0, "zimmer": 2.0, "bj": 1905,
-        "Kaufpreis": 159500, "Nebenkosten_Quote": 0.1057, 
-        "Renovierung": 2000, "Heizung_Puffer": 5000, 
-        "AfA_Satz": 0.025, 
-        "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
-        "Miete_Start": 575, 
-        "Hausgeld_Gesamt": 170, "Kosten_n_uml": 69, 
-        "Marktmiete_m2": 10.00, "Energie_Info": "Gas-Etage (Bj 1990 - Austausch fällig!)",
-        "Status": "Vermietet (Steigerungspotenzial)",
-        "Link": "https://www.kleinanzeigen.de/s-anzeige/vermietete-altbauwohnung-mit-balkon-in-zentraler-lage-/3279", 
-        "Bild_URLs": [], "PDF_Path": "",
-        "Erfassungsdatum": "2026-01-10", "Archiviert": False,
-        "Basis_Info": """Heizung (Gastherme 1990) muss gemacht werden -> Puffer eingerechnet. Kleine WEG.""",
-        "Summary_Case": """Günstiger Einkauf (2.380€/qm). Cashflow fast am Ziel (-225€).""",
-        "Summary_Pros": """- Hohe AfA (2,5%).\n- Extrem niedriges Hausgeld.\n- Preis verhandelbar wegen Heizung.""",
-        "Summary_Cons": """- Maklerprovision fällig.\n- Heizungstausch steht an."""
+        "Adresse": "Am Bach, 21217 Seevetal", "qm": 59, "zimmer": 2.0, "bj": 1965, "Kaufpreis": 160000, "Nebenkosten_Quote": 0.07, 
+        "Renovierung": 0, "Heizung_Puffer": 2000, "AfA_Satz": 0.03, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
+        "Miete_Start": 632.50, "Hausgeld_Gesamt": 368, "Kosten_n_uml": 130, "Marktmiete_m2": 13.45, "Energie_Info": "Gas (2022 neu), F",
+        "Status": "Vermietet (Treppe)", "Link": "", "Bild_URLs": [], "PDF_Path": "", "Archiviert": False, 
+        "Basis_Info": "Zielpreis 160k. Miet-Treppe fix.", "Summary_Case": "Cashflow-King mit Steuer-Hebel.", "Summary_Pros": "Provisionsfrei, Heizung neu.", "Summary_Cons": "Energie F."
     },
     "Neu Wulmstorf (Neubau-Anker)": {
-        "Adresse": "Hauptstraße 43, 21629 Neu Wulmstorf", 
-        "qm": 65.79, "zimmer": 2.0, "bj": 2016,
-        "Kaufpreis": 249000, "Nebenkosten_Quote": 0.07, 
-        "Renovierung": 0, "Heizung_Puffer": 0, 
-        "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
-        "Miete_Start": 920, 
-        "Hausgeld_Gesamt": 260, "Kosten_n_uml": 60, 
-        "Marktmiete_m2": 14.50, "Energie_Info": "Gas + Solar (Bj 2016), Klasse B (est.)",
-        "Status": "Frei ab 02/2026 (Provisionsfrei)",
-        "Link": "https://www.kleinanzeigen.de/s-anzeige/moderne-2-zimmer-wohnung-inkl-aussenstellplatz-in-begehrter-lage/3296695424-196-2807", 
-        "Bild_URLs": [
-            "https://img.kleinanzeigen.de/api/v1/prod-ads/images/b8/b8d9237e-390c-4f6d-9420-a262fb63e7c4?rule=$_59.AUTO",
-            "https://img.kleinanzeigen.de/api/v1/prod-ads/images/44/44e6c91e-dcb6-4d18-b759-ec288cf895fc?rule=$_59.AUTO",
-            "https://img.kleinanzeigen.de/api/v1/prod-ads/images/c2/c2c20f6e-904f-43df-b3f6-815ae965458a?rule=$_59.AUTO",
-            "https://img.kleinanzeigen.de/api/v1/prod-ads/images/9d/9d538360-5d4e-4cac-92c3-f672fc0d3a5e?rule=$_59.AUTO"
-        ], "PDF_Path": "",
-        "Erfassungsdatum": "2026-01-11", "Archiviert": False,
-        "Basis_Info": """Baujahr 2016 bestätigt. 14 Einheiten. Frei ab Feb 2026. LAGE: Direkt an B73 (laut!).""",
-        "Summary_Case": """'Sorglos-Paket'. Wertsicherung durch moderne Substanz & günstigen Einkauf.""",
-        "Summary_Pros": """- PROVISIONSFREI (Invest < 18k).\n- Baujahr 2016 (Technik top, Gas+Solar).\n- Frei lieferbar (sofort 14€/qm).""",
-        "Summary_Cons": """- LAGE AN B73 (Lärm/Emissionen).\n- Höchster Kaufpreis (249k).\n- Rendite ca. 4,4%."""
+        "Adresse": "Hauptstraße 43, 21629 Neu Wulmstorf", "qm": 65.79, "zimmer": 2.0, "bj": 2016, "Kaufpreis": 249000, "Nebenkosten_Quote": 0.07, 
+        "Renovierung": 0, "Heizung_Puffer": 0, "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
+        "Miete_Start": 920, "Hausgeld_Gesamt": 260, "Kosten_n_uml": 60, "Marktmiete_m2": 14.50, "Energie_Info": "Gas+Solar (Bj 2016), B",
+        "Status": "Leer ab 02/2026", "Link": "", "Bild_URLs": [], "PDF_Path": "", "Archiviert": False, 
+        "Basis_Info": "Neubau 2016. Provisionsfrei.", "Summary_Case": "Sicherheits-Anker. Wertsicherung.", "Summary_Pros": "Provisionsfrei, Technik top.", "Summary_Cons": "Lage B73."
     },
     "Elmshorn (Terrasse & Staffel)": {
-        "Adresse": "Johannesstr. 24-28, 25335 Elmshorn", 
-        "qm": 75.67, "zimmer": 2.0, "bj": 1994,
-        "Kaufpreis": 229000, "Nebenkosten_Quote": 0.1207, 
-        "Renovierung": 0, "Heizung_Puffer": 1000, 
-        "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
-        "Miete_Start": 665, 
-        "Hausgeld_Gesamt": 370, "Kosten_n_uml": 165, 
-        "Marktmiete_m2": 11.00, "Energie_Info": "104,9 kWh (C), Gas Bj. 2012",
-        "Status": "Vermietet (Staffel 2026/27)",
-        "Link": "https://www.kleinanzeigen.de/s-anzeige/moderne-2-zimmer-wohnung-inkl-aussenstellplatz-in-begehrter-lage/3296695424-196-2807", 
-        "Bild_URLs": [], "PDF_Path": "",
-        "Erfassungsdatum": "2026-01-12", "Archiviert": False,
-        "Basis_Info": """Staffelmiete: 2026 -> 765€, 2027 -> 815€. Heizung lt. Ausweis 2012 (Klasse C).""",
-        "Summary_Case": """Solides Investment mit eingebautem Rendite-Turbo (Staffel) und guter Substanz.""",
-        "Summary_Pros": """- Heizung Bj. 2012 (Energie C).\n- Miete steigt fix auf 815€ (2027).\n- Terrasse & TG.""",
-        "Summary_Cons": """- Hohes Hausgeld (Rücklagen).\n- Nachtrag zur Miete noch einzuholen."""
+        "Adresse": "Johannesstr. 24-28, 25335 Elmshorn", "qm": 75.67, "zimmer": 2.0, "bj": 1994, "Kaufpreis": 229000, "Nebenkosten_Quote": 0.1207, 
+        "Renovierung": 0, "Heizung_Puffer": 1000, "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
+        "Miete_Start": 665, "Hausgeld_Gesamt": 370, "Kosten_n_uml": 165, "Marktmiete_m2": 11.00, "Energie_Info": "Gas Bj 2012 (C)",
+        "Status": "Vermietet (Staffel)", "Link": "", "Bild_URLs": [], "PDF_Path": "", "Archiviert": False, 
+        "Basis_Info": "Mietstaffel (26/27). Heizung 2012.", "Summary_Case": "Aufsteiger mit Rendite-Turbo.", "Summary_Pros": "Mietstaffel fix, Terrasse.", "Summary_Cons": "Hohes Hausgeld."
     },
     "Harburg (Maisonette/Lifestyle)": {
-        "Adresse": "Marienstr. 52, 21073 Hamburg", 
-        "qm": 71, "zimmer": 2.0, "bj": 1954,
-        "Kaufpreis": 230000, "Nebenkosten_Quote": 0.1107, 
-        "Renovierung": 0, "Heizung_Puffer": 5000, 
-        "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
-        "Miete_Start": 720, "Hausgeld_Gesamt": 204, "Kosten_n_uml": 84, 
-        "Marktmiete_m2": 12.00, "Energie_Info": "116 kWh (D), Gas-Etage",
-        "Status": "Vermietet (Mieterwechsel?)",
-        "Link": "", 
-        "Bild_URLs": [], "PDF_Path": "",
-        "Erfassungsdatum": "2026-01-08", "Archiviert": False,
-        "Basis_Info": """Liebhaber-Objekt mit Galerie. Negativer Cashflow, aber Potenzial.""",
-        "Summary_Case": """Trophy Asset / Spekulation.""",
-        "Summary_Pros": """- Einzigartiger Schnitt (Galerie).\n- Lage TUHH.""",
-        "Summary_Cons": """- Negativer Cashflow (-400€).\n- WEG-Probleme (Wasser/Lärm)."""
+        "Adresse": "Marienstr. 52, 21073 Hamburg", "qm": 71, "zimmer": 2.0, "bj": 1954, "Kaufpreis": 230000, "Nebenkosten_Quote": 0.1107, 
+        "Renovierung": 0, "Heizung_Puffer": 5000, "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
+        "Miete_Start": 720, "Hausgeld_Gesamt": 204, "Kosten_n_uml": 84, "Marktmiete_m2": 12.00, "Energie_Info": "Gas-Etage (D)",
+        "Status": "Vermietet", "Link": "", "Bild_URLs": [], "PDF_Path": "", "Archiviert": False, 
+        "Basis_Info": "Liebhaber-Objekt. Negativer CF.", "Summary_Case": "Trophy Asset / Spekulation.", "Summary_Pros": "Galerie, Uninähe.", "Summary_Cons": "CF negativ, WEG-Themen."
     },
-    "Harburg (10er Paket)": {
-        "Adresse": "Eißendorf, Harburg", 
-        "qm": 313, "zimmer": 10, "bj": 1956,
-        "Kaufpreis": 998000, "Nebenkosten_Quote": 0.11,
-        "Miete_Start": 3900, "Hausgeld_Gesamt": 1000, "Kosten_n_uml": 500,
-        "Marktmiete_m2": 12.50, "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02, 
-        "Renovierung": 0, "Heizung_Puffer": 0, "Status": "Vermietet", "Energie_Info": "n.v.", 
-        "Link": "", "Bild_URLs": [], "PDF_Path": "",
-        "Erfassungsdatum": "2026-01-18", "Archiviert": True,
-        "Basis_Info": """Zu teuer (3.188 €/m²). Kein Mengenrabatt.""",
-        "Summary_Case": """Abgelehnt.""", "Summary_Pros": "", "Summary_Cons": ""
+    "Buxtehude (5-Zi Volumen)": {
+        "Adresse": "Stader Str., Buxtehude", "qm": 109.07, "zimmer": 5.0, "bj": 1972, "Kaufpreis": 236000, "Nebenkosten_Quote": 0.1057, "Miete_Start": 925, "Kosten_n_uml": 120, "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02, "Renovierung": 0, "Heizung_Puffer": 2000, "Hausgeld_Gesamt": 380, "Status": "Vermietet", "Link": "", "Bild_URLs": [], "PDF_Path": "", "Energie_Info": "F", "Marktmiete_m2": 10, "Archiviert": True, "Basis_Info": "Viel Fläche, aber Energie F.", "Summary_Case": "Substanz-Deal.", "Summary_Pros": "Günstiger qm-Preis.", "Summary_Cons": "Energie F."
+    },
+    "Stade (Altbau-Schnapper)": {
+        "Adresse": "Zentrum, Stade", "qm": 67.0, "zimmer": 2.0, "bj": 1905, "Kaufpreis": 159500, "Nebenkosten_Quote": 0.1057, "Miete_Start": 575, "Kosten_n_uml": 69, "AfA_Satz": 0.025, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02, "Renovierung": 2000, "Heizung_Puffer": 5000, "Hausgeld_Gesamt": 170, "Status": "Vermietet", "Link": "", "Bild_URLs": [], "PDF_Path": "", "Energie_Info": "Gas-Etage", "Marktmiete_m2": 10, "Archiviert": True, "Basis_Info": "Heizung muss neu. Hohe AfA.", "Summary_Case": "Günstiger Einkauf.", "Summary_Pros": "Hohe AfA.", "Summary_Cons": "Heizungstausch."
     }
 }
 
@@ -239,12 +164,9 @@ def load_data():
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
-            merged = {k: v for k, v in data.items() if k in DEFAULT_OBJEKTE}
+            merged = data.copy()
             for k, v in DEFAULT_OBJEKTE.items():
-                if k not in merged:
-                    merged[k] = v
-                if "Erfassungsdatum" not in merged[k]: merged[k]["Erfassungsdatum"] = date.today().strftime("%Y-%m-%d")
-                if "Archiviert" not in merged[k]: merged[k]["Archiviert"] = False
+                if k not in merged: merged[k] = v
             return merged
     return DEFAULT_OBJEKTE
 
@@ -254,50 +176,32 @@ def save_data(data):
 OBJEKTE = load_data()
 
 # ==========================================
-# 1. HELPER & PDF
+# 1. BERECHNUNG (CORE LOGIC)
 # ==========================================
 def clean_text(text):
     if not text: return ""
-    replacements = {"€": "EUR", "ä": "ae", "ö": "oe", "ü": "ue", "Ä": "Ae", "Ö": "Oe", "Ü": "Ue", "ß": "ss"}
-    for k, v in replacements.items():
-        text = text.replace(k, v)
-    return text
+    return text.replace("€", "EUR").replace("ä", "ae").replace("ö", "oe").replace("ü", "ue")
 
 def create_pdf_expose(obj_name, data, res):
+    # Einfacher PDF Generator
     class PDF(FPDF):
         def header(self):
             self.set_font('Arial', 'B', 12)
             self.set_text_color(100)
-            self.cell(0, 10, 'Investment Summary', 0, 1, 'R')
+            self.cell(0, 10, 'ImmoAsset Pro Summary', 0, 1, 'R')
             self.ln(5)
     pdf = PDF()
     pdf.add_page()
     pdf.set_font('Arial', 'B', 16)
     pdf.cell(0, 10, f"{clean_text(obj_name)}", 0, 1)
     pdf.set_font('Arial', '', 11)
-    pdf.cell(0, 8, f"Kaufpreis: {res['KP']:,.0f} EUR | Invest: {res['Invest']:,.0f} EUR", 0, 1)
+    pdf.cell(0, 8, f"Kaufpreis: {res['KP']:,.0f} EUR", 0, 1)
     pdf.cell(0, 8, f"Rendite (Start): {res['Rendite']:.2f}% | EKR (10J): {res['CAGR']:.2f}%", 0, 1)
     pdf.ln(5)
     pdf.multi_cell(0, 6, f"Strategie: {clean_text(data.get('Summary_Case'))}")
-    pdf.ln(2)
-    pdf.multi_cell(0, 6, f"Pros: {clean_text(data.get('Summary_Pros'))}")
-    pdf.ln(2)
-    pdf.multi_cell(0, 6, f"Risiken: {clean_text(data.get('Summary_Cons'))}")
     return pdf.output(dest='S').encode('latin-1', 'replace')
 
-# ==========================================
-# 2. BERECHNUNGSKERN
-# ==========================================
-st.sidebar.title("🧭 Navigation")
-page = st.sidebar.radio("Menü:", ["📊 Portfolio Übersicht", "🔍 Detail-Ansicht & Bearbeiten"])
-st.sidebar.markdown("---")
-
-st.sidebar.header("🏦 Global-Parameter")
-global_zins = st.sidebar.number_input("Zins Bank (%)", 1.0, 6.0, 3.80, 0.1) / 100
-global_tilgung = st.sidebar.number_input("Tilgung (%)", 0.0, 10.0, 1.50, 0.1) / 100
-global_steuer = st.sidebar.number_input("Steuersatz (%)", 20.0, 50.0, 42.00, 0.5) / 100
-
-def calculate_investment(obj_name, params):
+def calculate_investment(obj_name, params, global_zins, global_tilgung, global_steuer):
     kp = params["Kaufpreis"]
     zins = params.get("Zins_Indiv", global_zins)
     miet_st = params.get("Mietsteigerung", 0.02)
@@ -311,7 +215,6 @@ def calculate_investment(obj_name, params):
     
     rent_start = params["Miete_Start"] * 12
     
-    # Check Special Logic Flags
     is_meckelfeld = "Meckelfeld" in obj_name
     is_elmshorn = "Elmshorn" in obj_name and "Terrasse" in obj_name
     
@@ -319,27 +222,21 @@ def calculate_investment(obj_name, params):
     restschuld = loan
     immo_wert = kp
     
-    # 20 Jahre Berechnung
-    for i in range(21): # 0 bis 20
+    for i in range(21):
         jahr = START_JAHR + i
         
-        # --- MIET-LOGIK ---
+        # Miete Logik
         if is_meckelfeld:
-            rent_monthly = 0
-            if jahr < 2027: rent_monthly = params["Miete_Start"] 
-            elif jahr < 2029: rent_monthly = 690.00
-            elif jahr < 2032: rent_monthly = 727.38
-            else:
-                base_2032 = 793.50
-                rent_monthly = base_2032 * (1 + miet_st)**(jahr - 2032)
-            rent_yr = rent_monthly * 12
-            
+            if jahr < 2027: m = params["Miete_Start"] 
+            elif jahr < 2029: m = 690.00
+            elif jahr < 2032: m = 727.38
+            else: m = 793.50 * (1 + miet_st)**(jahr - 2032)
+            rent_yr = m * 12
         elif is_elmshorn:
             if jahr == 2026: rent_yr = 9180 
             elif jahr == 2027: rent_yr = 9780 
             elif jahr > 2027: rent_yr = 9780 * (1 + miet_st)**(i - 2) 
-            else: rent_yr = rent_start * 12
-            
+            else: rent_yr = rent_start
         else:
             rent_yr = rent_start * (1 + miet_st)**i
             
@@ -348,14 +245,9 @@ def calculate_investment(obj_name, params):
         tilgung = rate_pa - zinsen
         costs = params["Kosten_n_uml"] * 12
         
-        # Cashflow VOR Steuer
         cf_pre_tax = rent_yr - rate_pa - costs
-
-        # Steuer-Effekt
         tax_base = rent_yr - zinsen - (kp*0.8*afa_rate) - costs
         tax = tax_base * global_steuer * -1
-        
-        # Cashflow NACH Steuer
         cf_post_tax = cf_pre_tax + tax
         
         restschuld -= tilgung
@@ -372,7 +264,6 @@ def calculate_investment(obj_name, params):
             "Equity": immo_wert - restschuld
         })
 
-    # KPIs Jahr 10
     res_10 = data[9] 
     equity_10 = res_10["Equity"] + sum([d["CF (nach Steuer)"] for d in data[:10]])
     cagr = ((equity_10 / invest)**(0.1) - 1) * 100 if invest > 0 else 0
@@ -382,230 +273,230 @@ def calculate_investment(obj_name, params):
         "Name": obj_name, "Invest": invest, "KP": kp, "Rendite": (rent_start/kp)*100,
         "CAGR": cagr, "Avg_CF": avg_cf, "Gewinn_10J": equity_10 - invest,
         "Detail": data, "Params": params,
-        "Used_Zins": zins, "Used_AfA": afa_rate,
-        "Datum": params.get("Erfassungsdatum", "n.v."),
-        "Archiviert": params.get("Archiviert", False)
+        "Used_Zins": zins, "Archiviert": params.get("Archiviert", False)
     }
 
 # ==========================================
-# 3. UI
+# 2. APP LAYOUT (THE SAAS UI)
 # ==========================================
-if page == "📊 Portfolio Übersicht":
-    st.title("📊 Immobilien-Portfolio Dashboard")
-    results = [calculate_investment(k, v) for k, v in OBJEKTE.items()]
+
+# --- SIDEBAR ---
+with st.sidebar:
+    st.image("https://cdn-icons-png.flaticon.com/512/2620/2620602.png", width=60) # Placeholder Logo
+    st.markdown("### ImmoAsset **Pro**")
+    st.markdown("---")
     
-    active_results = [r for r in results if not r["Archiviert"]]
+    menu = st.radio(
+        "Hauptmenü", 
+        ["Dashboard", "Objekt-Details", "Einstellungen"], 
+        index=0,
+        label_visibility="collapsed"
+    )
     
+    st.markdown("---")
+    st.caption("Globale Annahmen:")
+    g_zins = st.number_input("Ø Zins (%)", 1.0, 6.0, 3.80, 0.1) / 100
+    g_tilg = st.number_input("Ø Tilgung (%)", 0.0, 10.0, 1.50, 0.1) / 100
+    g_steuer = st.number_input("Steuer (%)", 20.0, 50.0, 42.00, 0.5) / 100
+
+# --- DATA PREP ---
+results = [calculate_investment(k, v, g_zins, g_tilg, g_steuer) for k, v in OBJEKTE.items()]
+active_results = [r for r in results if not r["Archiviert"]]
+archive_results = [r for r in results if r["Archiviert"]]
+
+# --- PAGE: DASHBOARD ---
+if menu == "Dashboard":
+    st.markdown("## 👋 Willkommen zurück, Chef!")
+    st.markdown("Hier ist der aktuelle Status deines Portfolios.")
+    
+    # 1. KPI ROW (Cards)
     tot_invest = sum(r["Invest"] for r in active_results)
     tot_cf = sum(r["Avg_CF"] for r in active_results)
+    avg_ekr = np.mean([r["CAGR"] for r in active_results]) if active_results else 0
     
-    with st.container(border=True):
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Gesamt-Invest (Aktive Deals)", f"{tot_invest:,.0f} €")
-        c2.metric("Ø Cashflow (Aktive)", f"{tot_cf:,.0f} €", delta_color="normal")
-        c3.metric("Aktive Objekte", len(active_results))
+    c1, c2, c3, c4 = st.columns(4)
+    with c1: st.metric("Invest (Active)", f"{tot_invest/1000:,.0f}k €", delta=f"{len(active_results)} Units")
+    with c2: st.metric("Ø Cashflow / Monat", f"{tot_cf:,.0f} €", delta_color="normal")
+    with c3: st.metric("Ø EKR (10J)", f"{avg_ekr:.1f} %", delta="Ziel: >8%")
+    with c4: st.metric("Objekte auf Watchlist", f"{len(archive_results)}", delta_color="off")
     
-    if len(active_results) > 0:
-        st.markdown("---")
-        st.subheader("📈 Portfolio-Matrix (Bubble Chart)")
-        
-        bubble_data = []
+    st.markdown("---")
+
+    # 2. CHARTS (Modern)
+    c_chart1, c_chart2 = st.columns([2, 1])
+    
+    with c_chart1:
+        st.subheader("📈 Vermögens-Entwicklung (20 Jahre)")
+        years = list(range(START_JAHR, START_JAHR + 21))
+        agg_equity = {y: 0 for y in years}
+        agg_debt = {y: 0 for y in years}
         for r in active_results:
-            bubble_data.append({
-                "Objekt": r["Name"],
-                "Kaufpreis": r["KP"],
-                "Rendite (%)": round(r["Rendite"], 2),
-                "Invest (Größe)": r["Invest"],
-                "Cashflow (Farbe)": "Positiv" if r["Avg_CF"] >= 0 else "Negativ"
-            })
-        df_bubble = pd.DataFrame(bubble_data)
+            for row in r["Detail"]:
+                agg_equity[row["Jahr"]] += (row["Immo-Wert"] - row["Restschuld"])
+                agg_debt[row["Jahr"]] += row["Restschuld"]
         
-        fig = px.scatter(
-            df_bubble, x="Kaufpreis", y="Rendite (%)", size="Invest (Größe)", 
-            color="Cashflow (Farbe)", hover_name="Objekt", size_max=60,
-            color_discrete_map={"Positiv": "green", "Negativ": "red"}
-        )
-        st.plotly_chart(fig, use_container_width=True)
-
-    st.markdown("---")
-
-    df_data = []
-    for r in results:
-        status_icon = "❌ Ja" if r["Archiviert"] else "✅ Nein"
-        df_data.append({
-            "Datum": r["Datum"],
-            "Status": status_icon,
-            "Objekt": r["Name"],
-            "Kaufpreis": f"{r['KP']:,.0f} €",
-            "Invest (EK)": f"{r['Invest']:,.0f} €",
-            "Rendite": f"{r['Rendite']:.2f} %",
-            "EKR (10J)": f"{r['CAGR']:.2f} %",
-            "Ø CF (Nach St.)": f"{r['Avg_CF']:,.0f} €"
-        })
+        df_wealth = pd.DataFrame({"Jahr": years, "Netto-Vermögen": list(agg_equity.values()), "Bank-Schulden": list(agg_debt.values())})
         
-    df = pd.DataFrame(df_data)
-    
-    st.dataframe(
-        df.style.applymap(lambda x: "background-color: #3b1e1e; color: #ff9999" if x == "❌ Ja" else "", subset=["Status"]),
-        use_container_width=True, 
-        hide_index=True
-    )
+        # Plotly Area Chart Custom
+        fig_w = go.Figure()
+        fig_w.add_trace(go.Scatter(x=df_wealth["Jahr"], y=df_wealth["Netto-Vermögen"], stackgroup='one', name='Netto-Vermögen', line=dict(color='#10b981', width=0)))
+        fig_w.add_trace(go.Scatter(x=df_wealth["Jahr"], y=df_wealth["Bank-Schulden"], stackgroup='one', name='Bank-Schulden', line=dict(color='#ef4444', width=0)))
+        fig_w.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=0, r=0, t=0, b=0), height=300, legend=dict(orientation="h", y=1.1))
+        st.plotly_chart(fig_w, use_container_width=True)
 
-else:
-    st.title("🔍 Detail-Ansicht & Bearbeiten")
-    sel = st.selectbox("Objekt wählen:", list(OBJEKTE.keys()))
-    obj_data = OBJEKTE[sel]
-    
-    if obj_data.get("Archiviert"):
-        st.error("❌ Dieses Objekt ist archiviert. Die Berechnungen werden angezeigt, zählen aber nicht zum Portfolio.")
-    
-    # ----------------------------------------------------
-    # STECKBRIEF (INKL. INVEST-BERECHNUNG)
-    # ----------------------------------------------------
-    st.markdown("### 📍 Objekt-Steckbrief")
-    
-    kp_val = obj_data["Kaufpreis"]
-    nk_quote = obj_data["Nebenkosten_Quote"]
-    nk_wert = kp_val * nk_quote
-    reno_wert = obj_data.get("Renovierung", 0)
-    puffer_wert = obj_data.get("Heizung_Puffer", 0)
-    invest_ek = nk_wert + reno_wert + puffer_wert
-
-    with st.container(border=True):
-        c_prof1, c_prof2 = st.columns(2)
-        with c_prof1:
-            st.markdown(f"**📅 Erfasst am:** {obj_data.get('Erfassungsdatum', 'n.v.')}")
-            st.markdown(f"**🏠 Adresse:** {obj_data.get('Adresse', 'n.v.')}")
-            st.markdown(f"**📏 Größe:** {obj_data['qm']} m² | {obj_data['zimmer']} Zi.")
-            st.markdown(f"**⚡ Energie:** {obj_data.get('Energie_Info', 'n.v.')}")
-        with c_prof2:
-            st.markdown(f"**💶 Hausgeld:** {obj_data.get('Hausgeld_Gesamt', 0)} €")
-            st.markdown(f"**🔑 Status:** {obj_data.get('Status', 'n.v.')}")
-        
-        st.markdown("---")
-        st.metric("💸 Invest (Eigenkapital)", f"{invest_ek:,.0f} €")
-
-    if obj_data.get("Basis_Info"):
-        st.info(f"ℹ️ **Info:** {obj_data['Basis_Info']}")
-
-    # Links & PDF
-    c_link, c_pdf = st.columns(2)
-    url = obj_data.get("Link", "")
-    if url:
-        c_link.markdown(f"""<a href="{url}" target="_blank" style="text-decoration: none;"><div style="background-color: #0052cc; padding: 8px 12px; border-radius: 4px; text-align: center; color: white;">↗ Zum Inserat</div></a>""", unsafe_allow_html=True)
-
-    pdf_path = obj_data.get("PDF_Path")
-    if pdf_path and os.path.exists(pdf_path):
-        with open(pdf_path, "rb") as f:
-            c_pdf.download_button("📄 Exposé PDF", f, file_name=os.path.basename(pdf_path), use_container_width=True)
-
-    # ----------------------------------------------------
-    # EDIT & UPLOAD AREA
-    # ----------------------------------------------------
-    st.markdown("---")
-    st.header("⚙️ Daten ändern & Status")
-    
-    with st.expander("📝 Stammdaten & Status bearbeiten", expanded=True):
-        c_e1, c_e2 = st.columns(2)
-        
-        is_archived = c_e1.checkbox("❌ Als 'Abgelehnt/Archiviert' markieren", value=obj_data.get("Archiviert", False))
-        
-        try:
-            curr_date = date.fromisoformat(obj_data.get("Erfassungsdatum", "2026-01-01"))
-        except:
-            curr_date = date.today()
-        new_date = c_e2.date_input("Erfassungsdatum", curr_date)
-        
-        st.markdown("---")
-        
-        c_e3, c_e4, c_e5 = st.columns(3)
-        n_kp = c_e3.number_input("Kaufpreis", value=float(obj_data["Kaufpreis"]))
-        n_miete = c_e4.number_input("Start-Miete", value=float(obj_data["Miete_Start"]))
-        n_qm = c_e5.number_input("Wohnfläche", value=float(obj_data["qm"]))
-        
-        n_link = st.text_input("Link zum Inserat", value=obj_data.get("Link", ""))
-        n_case = st.text_area("Investment Case", value=obj_data.get("Summary_Case", ""))
-        
-        if st.button("💾 Änderungen Speichern"):
-            OBJEKTE[sel].update({
-                "Archiviert": is_archived,
-                "Erfassungsdatum": new_date.strftime("%Y-%m-%d"),
-                "Kaufpreis": n_kp, "Miete_Start": n_miete, "qm": n_qm, "Link": n_link,
-                "Summary_Case": n_case
-            })
-            save_data(OBJEKTE)
-            st.success("Gespeichert!")
-            st.rerun()
-
-    # ----------------------------------------------------
-    # LIVE-CALC & JAHRESPLÄNE (JETZT IMMER SICHTBAR!)
-    # ----------------------------------------------------
-    st.markdown("---")
-    st.header("📊 Kalkulation & Szenarien")
-    
-    with st.expander("⚙️ Parameter anpassen (Live)", expanded=True):
-        c1, c2, c3, c4 = st.columns(4)
-        curr_z = obj_data.get("Zins_Indiv", global_zins)
-        curr_a = obj_data.get("AfA_Satz", 0.02)
-        curr_m = obj_data.get("Mietsteigerung", 0.02)
-        curr_w = obj_data.get("Wertsteigerung_Immo", 0.02)
-
-        new_z = c1.slider("Zins (%)", 1.0, 6.0, curr_z*100, 0.1, key=f"z_{sel}") / 100
-        new_a = c2.slider("AfA (%)", 1.0, 5.0, curr_a*100, 0.1, key=f"a_{sel}") / 100
-        
-        if "Meckelfeld" in sel:
-            st.caption("ℹ️ Meckelfeld nutzt feste Stufen (2027/29/32)")
-            new_m = curr_m 
-        else:
-            new_m = c3.slider("Mietsteigerung (%)", 0.0, 5.0, curr_m*100, 0.1, key=f"m_{sel}") / 100
+    with c_chart2:
+        st.subheader("🎯 Deal Matrix")
+        if active_results:
+            bubble_df = pd.DataFrame([{
+                "Objekt": r["Name"], "KP": r["KP"], "Rendite": r["Rendite"], 
+                "CF": r["Avg_CF"], "Size": r["Invest"]
+            } for r in active_results])
             
-        new_w = c4.slider("Wertsteigerung (%)", 0.0, 6.0, curr_w*100, 0.1, key=f"w_{sel}") / 100
-        
-        if (new_z != curr_z) or (new_a != curr_a) or (new_m != curr_m) or (new_w != curr_w):
-            OBJEKTE[sel]["Zins_Indiv"] = new_z
-            OBJEKTE[sel]["AfA_Satz"] = new_a
-            OBJEKTE[sel]["Mietsteigerung"] = new_m
-            OBJEKTE[sel]["Wertsteigerung_Immo"] = new_w
-            save_data(OBJEKTE)
-            st.rerun()
+            fig_b = px.scatter(bubble_df, x="KP", y="Rendite", size="Size", color="CF", 
+                               color_continuous_scale=["#ef4444", "#10b981"], hover_name="Objekt")
+            fig_b.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(240,242,246,0.5)', height=300)
+            st.plotly_chart(fig_b, use_container_width=True)
+        else:
+            st.info("Keine aktiven Deals.")
 
-    res = calculate_investment(sel, OBJEKTE[sel])
+    # 3. PORTFOLIO TABLE (Styled)
+    st.subheader("📋 Dein Portfolio")
     
-    k1, k2, k3, k4 = st.columns(4)
-    k1.metric("Ø Monatl. CF (Nach Steuer)", f"{res['Avg_CF']:,.0f} €")
-    k2.metric("EKR (10J)", f"{res['CAGR']:.2f} %")
-    k3.metric("Miete/m²", f"{(res['Detail'][0]['Miete (mtl.)']/obj_data['qm']):.2f} €")
-    k4.metric("Gewinn nach 10J", f"{res['Gewinn_10J']:,.0f} €")
-
-    # 2. HAUPT-TABELLE
-    df_full = pd.DataFrame(res["Detail"])
-    df_10 = df_full.head(10)[["Laufzeit", "Miete (mtl.)", "CF (vor Steuer)", "CF (nach Steuer)", "Restschuld"]]
+    # Create nice DataFrame
+    table_data = []
+    for r in results:
+        status = "🟢 Aktiv" if not r["Archiviert"] else "🔴 Archiv"
+        table_data.append({
+            "Status": status,
+            "Objekt": r["Name"],
+            "Preis": r["KP"],
+            "Rendite": r["Rendite"],
+            "Cashflow": r["Avg_CF"],
+            "EKR 10J": r["CAGR"]
+        })
+    
+    df_tab = pd.DataFrame(table_data)
     
     st.dataframe(
-        df_10.style.format({
-            "Miete (mtl.)": "{:,.2f} €",
-            "CF (vor Steuer)": "{:,.0f} €",
-            "CF (nach Steuer)": "{:,.0f} €",
-            "Restschuld": "{:,.0f} €"
-        }),
+        df_tab,
+        column_config={
+            "Preis": st.column_config.NumberColumn("Kaufpreis", format="%d €"),
+            "Rendite": st.column_config.NumberColumn("Brutto-Rendite", format="%.2f %%"),
+            "Cashflow": st.column_config.NumberColumn("Ø CF (mtl.)", format="%d €"),
+            "EKR 10J": st.column_config.NumberColumn("EK-Rendite", format="%.2f %%"),
+            "Status": st.column_config.TextColumn("Status"),
+        },
         use_container_width=True,
         hide_index=True
     )
 
-    # 3. AUSBLICK (WIEDER DA!)
-    with st.expander("🔮 Ausblick: Jahr 15 & Jahr 20 ansehen"):
-        c_15, c_20 = st.columns(2)
+# --- PAGE: DETAIL VIEW ---
+elif menu == "Objekt-Details":
+    # Selection mit schöner Formatierung im Dropdown
+    sorted_keys = sorted(OBJEKTE.keys(), key=lambda x: OBJEKTE[x].get("Archiviert", False))
+    sel = st.selectbox("Objekt auswählen:", sorted_keys)
+    obj = OBJEKTE[sel]
+    res = calculate_investment(sel, obj, g_zins, g_tilg, g_steuer)
+
+    # Header Area
+    col_head1, col_head2 = st.columns([3, 1])
+    with col_head1:
+        st.title(sel)
+        st.caption(f"📍 {obj.get('Adresse', 'Keine Adresse')} | 📏 {obj['qm']} m²")
+    with col_head2:
+        if obj.get("Archiviert"):
+            st.error("ARCHIVIERT")
+        else:
+            st.success("AKTIV")
+    
+    # TABS LAYOUT (UX IMPROVEMENT)
+    tab1, tab2, tab3, tab4 = st.tabs(["📊 Übersicht", "💰 Finanzen & Plan", "📝 Daten & Docs", "⚙️ Bearbeiten"])
+    
+    with tab1:
+        # High Level KPIs
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Invest (EK)", f"{res['Invest']:,.0f} €")
+        c2.metric("Cashflow (Nach Steuer)", f"{res['Avg_CF']:,.0f} €")
+        c3.metric("Gewinn nach 10J", f"{res['Gewinn_10J']:,.0f} €")
         
-        with c_15:
-            st.markdown("#### Jahr 15")
-            d15 = res["Detail"][14]
-            st.write(f"**Miete:** {d15['Miete (mtl.)']:,.2f} €")
-            st.write(f"**Restschuld:** {d15['Restschuld']:,.0f} €")
-            st.write(f"**Equity:** {d15['Equity']:,.0f} €")
+        st.markdown("### Investment Case")
+        st.info(obj.get("Summary_Case", "Keine Strategie definiert."))
+        
+        cc1, cc2 = st.columns(2)
+        with cc1: 
+            st.markdown("**✅ Pro:**")
+            st.markdown(obj.get("Summary_Pros", "-"))
+        with cc2:
+            st.markdown("**⚠️ Contra:**")
+            st.markdown(obj.get("Summary_Cons", "-"))
+
+    with tab2:
+        st.markdown("### 10-Jahres-Planung")
+        df_detail = pd.DataFrame(res["Detail"])
+        st.dataframe(
+            df_detail.head(10)[["Laufzeit", "Miete (mtl.)", "CF (vor Steuer)", "CF (nach Steuer)", "Restschuld"]],
+            use_container_width=True,
+            hide_index=True,
+            column_config={"Miete (mtl.)": st.column_config.NumberColumn(format="%.2f €"), "Restschuld": st.column_config.NumberColumn(format="%d €")}
+        )
+        
+        st.markdown("### Langzeit-Ausblick")
+        c15, c20 = st.columns(2)
+        d15 = res["Detail"][14]
+        d20 = res["Detail"][19]
+        
+        c15.metric("Jahr 15 (Equity)", f"{d15['Equity']:,.0f} €", delta=f"Restschuld: {d15['Restschuld']:,.0f}")
+        c20.metric("Jahr 20 (Equity)", f"{d20['Equity']:,.0f} €", delta=f"Restschuld: {d20['Restschuld']:,.0f}")
+
+    with tab3:
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("### Stammdaten")
+            st.write(f"**Baujahr:** {obj['bj']}")
+            st.write(f"**Hausgeld:** {obj.get('Hausgeld_Gesamt',0)} €")
+            st.write(f"**Energie:** {obj.get('Energie_Info', '-')}")
+            if obj.get("Link"): st.markdown(f"[Zum Inserat]({obj['Link']})")
+        
+        with c2:
+            st.markdown("### Dokumente")
+            if obj.get("PDF_Path") and os.path.exists(obj["PDF_Path"]):
+                with open(obj["PDF_Path"], "rb") as f:
+                    st.download_button("📄 Exposé herunterladen", f, "Expose.pdf")
+            else:
+                st.write("Keine PDF hinterlegt.")
+                
+            st.markdown("### Bilder")
+            if obj.get("Bild_URLs"):
+                st.image(obj["Bild_URLs"][0], caption="Titelbild")
+
+    with tab4:
+        st.markdown("### Objekt bearbeiten")
+        with st.form("edit_form"):
+            col_e1, col_e2 = st.columns(2)
+            n_kp = col_e1.number_input("Kaufpreis", value=float(obj["Kaufpreis"]))
+            n_status = col_e2.checkbox("Archiviert?", value=obj.get("Archiviert", False))
             
-        with c_20:
-            st.markdown("#### Jahr 20")
-            d20 = res["Detail"][19]
-            st.write(f"**Miete:** {d20['Miete (mtl.)']:,.2f} €")
-            st.write(f"**Restschuld:** {d20['Restschuld']:,.0f} €")
-            st.write(f"**Equity:** {d20['Equity']:,.0f} €")
+            n_case = st.text_area("Investment Case", value=obj.get("Summary_Case", ""))
+            
+            if st.form_submit_button("Speichern"):
+                OBJEKTE[sel]["Kaufpreis"] = n_kp
+                OBJEKTE[sel]["Archiviert"] = n_status
+                OBJEKTE[sel]["Summary_Case"] = n_case
+                save_data(OBJEKTE)
+                st.success("Gespeichert!")
+                st.rerun()
+        
+        st.markdown("### Upload")
+        up = st.file_uploader("Exposé PDF hochladen", type="pdf")
+        if up:
+            path = os.path.join(MEDIA_DIR, f"{sel}_expose.pdf")
+            with open(path, "wb") as f: f.write(up.getbuffer())
+            OBJEKTE[sel]["PDF_Path"] = path
+            save_data(OBJEKTE)
+            st.success("Hochgeladen!")
+
+# --- PAGE: SETTINGS ---
+elif menu == "Einstellungen":
+    st.header("⚙️ App Einstellungen")
+    st.info("Hier könnten Account-Einstellungen oder API-Keys für Bankanbindungen stehen.")
+    st.button("Cache leeren / Neu laden")
