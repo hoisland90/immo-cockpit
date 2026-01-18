@@ -45,12 +45,11 @@ if not check_password(): st.stop()
 st.markdown("""
 <style>
 div[data-baseweb="select"] > div {border-color: #808495 !important; border-width: 1px !important;}
-/* Abgelehnten Zeilen eine leichte Rötung geben (optional, wirkt nur bedingt in st.dataframe) */
 </style>
 """, unsafe_allow_html=True)
 
 START_JAHR = 2026
-DATA_FILE = "portfolio_data_final_v2.json" # Neue Datei für Version 2
+DATA_FILE = "portfolio_data_final_v3.json" # Neue Datei
 MEDIA_DIR = "expose_files"
 
 if not os.path.exists(MEDIA_DIR):
@@ -60,6 +59,23 @@ if not os.path.exists(MEDIA_DIR):
 # 0. DATEN (DIE OBJEKTE)
 # ==========================================
 DEFAULT_OBJEKTE = {
+    "Meckelfeld (Ziel-Preis 160k)": {
+        "Adresse": "Am Bach, 21217 Seevetal", 
+        "qm": 59, "zimmer": 2.0, "bj": 1965,
+        "Kaufpreis": 160000, "Nebenkosten_Quote": 0.07, 
+        "Renovierung": 0, "Heizung_Puffer": 2000, 
+        "AfA_Satz": 0.03, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
+        "Miete_Start": 632.50, "Hausgeld_Gesamt": 368, "Kosten_n_uml": 130, 
+        "Marktmiete_m2": 13.45, "Energie_Info": "Gas (2022/23 neu!), 181 kWh (F)",
+        "Status": "Vermietet (Treppenmiete)",
+        "Link": "https://www.kleinanzeigen.de/s-anzeige/etw-kapitalanlage-meckelfeld-eigenland-ohne-makler-/3295455732-196-2812", 
+        "Bild_URLs": [], "PDF_Path": "",
+        "Erfassungsdatum": "2026-01-18", "Archiviert": False,
+        "Basis_Info": """Heizung NEU (2022). Miete steigt in Stufen (2027: 690€, 2029: 727€). Kalkuliert mit Zielpreis 160k.""",
+        "Summary_Case": """Substanz-Deal mit extremem Steuer-Hebel. Bei 160k sehr attraktiv nach Steuer.""",
+        "Summary_Pros": """- Provisionsfrei.\n- Fixe Mietsteigerung (Treppe).\n- Heizung nagelneu.""",
+        "Summary_Cons": """- Energieklasse F (aber Heizung neu).\n- WEG-Risiko (Fassade/Bahn)."""
+    },
     "Winsen (Optimierter Deal)": {
         "Adresse": "21423 Winsen (Luhe)", 
         "qm": 55.0, "zimmer": 2.0, "bj": 1985,
@@ -77,23 +93,6 @@ DEFAULT_OBJEKTE = {
         "Summary_Case": """Durch Preisreduktion fast Cashflow-Neutral (-180€). Solide Substanz.""",
         "Summary_Pros": """- Hohe Miete (633€).\n- Guter Zustand (Bj 85).\n- Verhandlungs-Potenzial.""",
         "Summary_Cons": """- Maklerprovision fällig.\n- Wenig Mietsteigerungspotenzial (schon hoch)."""
-    },
-    "Meckelfeld (Ziel-Preis 160k)": {
-        "Adresse": "Am Bach, 21217 Seevetal", 
-        "qm": 59, "zimmer": 2.0, "bj": 1965,
-        "Kaufpreis": 160000, "Nebenkosten_Quote": 0.07, 
-        "Renovierung": 0, "Heizung_Puffer": 2000, 
-        "AfA_Satz": 0.03, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
-        "Miete_Start": 632.50, "Hausgeld_Gesamt": 368, "Kosten_n_uml": 130, 
-        "Marktmiete_m2": 13.45, "Energie_Info": "Gas (2022/23 neu!), 181 kWh (F)",
-        "Status": "Vermietet (Treppenmiete)",
-        "Link": "https://www.kleinanzeigen.de/s-anzeige/etw-kapitalanlage-meckelfeld-eigenland-ohne-makler-/3295455732-196-2812", 
-        "Bild_URLs": [], "PDF_Path": "",
-        "Erfassungsdatum": "2026-01-18", "Archiviert": False,
-        "Basis_Info": """Heizung NEU (2022). Miete steigt in Stufen (2027: 690€, 2029: 727€). Kalkuliert mit Zielpreis 160k.""",
-        "Summary_Case": """Substanz-Deal mit extremem Steuer-Hebel. Bei 160k sehr attraktiv nach Steuer.""",
-        "Summary_Pros": """- Provisionsfrei.\n- Fixe Mietsteigerung (Treppe).\n- Heizung nagelneu.""",
-        "Summary_Cons": """- Energieklasse F (aber Heizung neu).\n- WEG-Risiko (Fassade/Bahn)."""
     },
     "Pinneberg-Thesdorf (Provisionsfrei)": {
         "Adresse": "25421 Pinneberg (Thesdorf)", 
@@ -131,14 +130,105 @@ DEFAULT_OBJEKTE = {
         "Summary_Pros": """- Preis/qm sehr niedrig (2.163€).\n- 5 Zimmer (selten).""",
         "Summary_Cons": """- Energieklasse F (Sanierungsdruck).\n- Alter Mietvertrag."""
     },
+    "Stade (4-Zi Leerstand/Top-Zustand)": {
+        "Adresse": "Köhnshöhe 10a, 21680 Stade", 
+        "qm": 87.0, "zimmer": 3.5, "bj": 1972,
+        "Kaufpreis": 239000, "Nebenkosten_Quote": 0.07, 
+        "Renovierung": 0, "Heizung_Puffer": 0, 
+        "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
+        "Miete_Start": 950, 
+        "Hausgeld_Gesamt": 286, "Kosten_n_uml": 105, 
+        "Marktmiete_m2": 11.50, "Energie_Info": "Öl-Zentralheizung (Bj 1972), Klasse E",
+        "Status": "Leerstehend (Sofort neu vermietbar)",
+        "Link": "https://www.kleinanzeigen.de/s-anzeige/einziehen-wohlfuehlen-moderne-4-zimmer-wohnung-in-toplage-/3282261577-196-2829", 
+        "Bild_URLs": [], "PDF_Path": "",
+        "Erfassungsdatum": "2026-01-10", "Archiviert": False,
+        "Basis_Info": """Provisionsfrei! Leerstand = Chance auf sofortige Marktmiete. Hausgeld extrem niedrig.""",
+        "Summary_Case": """Cashflow-Case durch Neuvermietung. Risiko: Ölheizung in Hochhaus-Siedlung.""",
+        "Summary_Pros": """- Keine Maklergebühr.\n- Kein Sanierungsstau in der Wohnung.\n- Sofort ca. 11€/qm realisierbar.""",
+        "Summary_Cons": """- Lage (Hochhaus-Charakter).\n- Ölheizung (Zukunfts-Risiko)."""
+    },
+    "Stade (Altbau-Schnapper)": {
+        "Adresse": "Zentrumsnah, 21680 Stade", 
+        "qm": 67.0, "zimmer": 2.0, "bj": 1905,
+        "Kaufpreis": 159500, "Nebenkosten_Quote": 0.1057, 
+        "Renovierung": 2000, "Heizung_Puffer": 5000, 
+        "AfA_Satz": 0.025, 
+        "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
+        "Miete_Start": 575, 
+        "Hausgeld_Gesamt": 170, "Kosten_n_uml": 69, 
+        "Marktmiete_m2": 10.00, "Energie_Info": "Gas-Etage (Bj 1990 - Austausch fällig!)",
+        "Status": "Vermietet (Steigerungspotenzial)",
+        "Link": "https://www.kleinanzeigen.de/s-anzeige/vermietete-altbauwohnung-mit-balkon-in-zentraler-lage-/3279", 
+        "Bild_URLs": [], "PDF_Path": "",
+        "Erfassungsdatum": "2026-01-10", "Archiviert": False,
+        "Basis_Info": """Heizung (Gastherme 1990) muss gemacht werden -> Puffer eingerechnet. Kleine WEG.""",
+        "Summary_Case": """Günstiger Einkauf (2.380€/qm). Cashflow fast am Ziel (-225€).""",
+        "Summary_Pros": """- Hohe AfA (2,5%).\n- Extrem niedriges Hausgeld.\n- Preis verhandelbar wegen Heizung.""",
+        "Summary_Cons": """- Maklerprovision fällig.\n- Heizungstausch steht an."""
+    },
+    "Neu Wulmstorf (Neubau-Anker)": {
+        "Adresse": "Hauptstraße 43, 21629 Neu Wulmstorf", 
+        "qm": 65.79, "zimmer": 2.0, "bj": 2016,
+        "Kaufpreis": 249000, "Nebenkosten_Quote": 0.07, 
+        "Renovierung": 0, "Heizung_Puffer": 0, 
+        "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
+        "Miete_Start": 920, 
+        "Hausgeld_Gesamt": 260, "Kosten_n_uml": 60, 
+        "Marktmiete_m2": 14.50, "Energie_Info": "Gas + Solar (Bj 2016), Klasse B (est.)",
+        "Status": "Frei ab 02/2026 (Provisionsfrei)",
+        "Link": "https://www.kleinanzeigen.de/s-anzeige/moderne-2-zimmer-wohnung-inkl-aussenstellplatz-in-begehrter-lage/3296695424-196-2807", 
+        "Bild_URLs": [], "PDF_Path": "",
+        "Erfassungsdatum": "2026-01-11", "Archiviert": False,
+        "Basis_Info": """Baujahr 2016 bestätigt. 14 Einheiten. Frei ab Feb 2026. LAGE: Direkt an B73 (laut!).""",
+        "Summary_Case": """'Sorglos-Paket'. Wertsicherung durch moderne Substanz & günstigen Einkauf.""",
+        "Summary_Pros": """- PROVISIONSFREI (Invest < 18k).\n- Baujahr 2016 (Technik top, Gas+Solar).\n- Frei lieferbar (sofort 14€/qm).""",
+        "Summary_Cons": """- LAGE AN B73 (Lärm/Emissionen).\n- Höchster Kaufpreis (249k).\n- Rendite ca. 4,4%."""
+    },
+    "Elmshorn (Terrasse & Staffel)": {
+        "Adresse": "Johannesstr. 24-28, 25335 Elmshorn", 
+        "qm": 75.67, "zimmer": 2.0, "bj": 1994,
+        "Kaufpreis": 229000, "Nebenkosten_Quote": 0.1207, 
+        "Renovierung": 0, "Heizung_Puffer": 1000, 
+        "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
+        "Miete_Start": 665, 
+        "Hausgeld_Gesamt": 370, "Kosten_n_uml": 165, 
+        "Marktmiete_m2": 11.00, "Energie_Info": "104,9 kWh (C), Gas Bj. 2012",
+        "Status": "Vermietet (Staffel 2026/27)",
+        "Link": "https://www.kleinanzeigen.de/s-anzeige/moderne-2-zimmer-wohnung-inkl-aussenstellplatz-in-begehrter-lage/3296695424-196-2807", 
+        "Bild_URLs": [], "PDF_Path": "",
+        "Erfassungsdatum": "2026-01-12", "Archiviert": False,
+        "Basis_Info": """Staffelmiete: 2026 -> 765€, 2027 -> 815€. Heizung lt. Ausweis 2012 (Klasse C).""",
+        "Summary_Case": """Solides Investment mit eingebautem Rendite-Turbo (Staffel) und guter Substanz.""",
+        "Summary_Pros": """- Heizung Bj. 2012 (Energie C).\n- Miete steigt fix auf 815€ (2027).\n- Terrasse & TG.""",
+        "Summary_Cons": """- Hohes Hausgeld (Rücklagen).\n- Nachtrag zur Miete noch einzuholen."""
+    },
+    "Harburg (Maisonette/Lifestyle)": {
+        "Adresse": "Marienstr. 52, 21073 Hamburg", 
+        "qm": 71, "zimmer": 2.0, "bj": 1954,
+        "Kaufpreis": 230000, "Nebenkosten_Quote": 0.1107, 
+        "Renovierung": 0, "Heizung_Puffer": 5000, 
+        "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
+        "Miete_Start": 720, "Hausgeld_Gesamt": 204, "Kosten_n_uml": 84, 
+        "Marktmiete_m2": 12.00, "Energie_Info": "116 kWh (D), Gas-Etage",
+        "Status": "Vermietet (Mieterwechsel?)",
+        "Link": "", 
+        "Bild_URLs": [], "PDF_Path": "",
+        "Erfassungsdatum": "2026-01-08", "Archiviert": False,
+        "Basis_Info": """Liebhaber-Objekt mit Galerie. Negativer Cashflow, aber Potenzial.""",
+        "Summary_Case": """Trophy Asset / Spekulation.""",
+        "Summary_Pros": """- Einzigartiger Schnitt (Galerie).\n- Lage TUHH.""",
+        "Summary_Cons": """- Negativer Cashflow (-400€).\n- WEG-Probleme (Wasser/Lärm)."""
+    },
     "Harburg (10er Paket)": {
         "Adresse": "Eißendorf, Harburg", 
         "qm": 313, "zimmer": 10, "bj": 1956,
         "Kaufpreis": 998000, "Nebenkosten_Quote": 0.11,
         "Miete_Start": 3900, "Hausgeld_Gesamt": 1000, "Kosten_n_uml": 500,
         "Marktmiete_m2": 12.50, "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02, 
-        "Renovierung": 0, "Heizung_Puffer": 0, "Status": "Vermietet", "Energie_Info": "n.v.", "Link": "", "Bild_URLs": [], "PDF_Path": "",
-        "Erfassungsdatum": "2026-01-18", "Archiviert": True, # BEISPIEL FÜR ROT
+        "Renovierung": 0, "Heizung_Puffer": 0, "Status": "Vermietet", "Energie_Info": "n.v.", 
+        "Link": "", "Bild_URLs": [], "PDF_Path": "",
+        "Erfassungsdatum": "2026-01-18", "Archiviert": True,
         "Basis_Info": """Zu teuer (3.188 €/m²). Kein Mengenrabatt.""",
         "Summary_Case": """Abgelehnt.""", "Summary_Pros": "", "Summary_Cons": ""
     }
@@ -223,6 +313,7 @@ def calculate_investment(obj_name, params):
     
     # Check Special Logic Flags
     is_meckelfeld = "Meckelfeld" in obj_name
+    is_elmshorn = "Elmshorn" in obj_name and "Terrasse" in obj_name
     
     data = []
     restschuld = loan
@@ -242,6 +333,14 @@ def calculate_investment(obj_name, params):
                 base_2032 = 793.50
                 rent_monthly = base_2032 * (1 + miet_st)**(jahr - 2032)
             rent_yr = rent_monthly * 12
+            
+        elif is_elmshorn:
+            # Staffel: 2026->765, 2027->815
+            if jahr == 2026: rent_yr = 9180 
+            elif jahr == 2027: rent_yr = 9780 
+            elif jahr > 2027: rent_yr = 9780 * (1 + miet_st)**(i - 2) 
+            else: rent_yr = rent_start * 12 # Fallback
+            
         else:
             rent_yr = rent_start * (1 + miet_st)**i
             
@@ -329,8 +428,6 @@ if page == "📊 Portfolio Übersicht":
         
     df = pd.DataFrame(df_data)
     
-    # Anzeige mit bedingter Formatierung (via Pandas Styler in Streamlit bedingt möglich, 
-    # hier einfache Darstellung. Rot-Markierung über 'Status'-Spalte visuell erkennbar).
     st.dataframe(
         df.style.applymap(lambda x: "background-color: #3b1e1e; color: #ff9999" if x == "❌ Ja" else "", subset=["Status"]),
         use_container_width=True, 
@@ -434,6 +531,33 @@ else:
         st.markdown("---")
         st.header("📊 Kalkulation & Szenarien")
         
+        with st.expander("⚙️ Parameter anpassen (Live)", expanded=True):
+            c1, c2, c3, c4 = st.columns(4)
+            curr_z = obj_data.get("Zins_Indiv", global_zins)
+            curr_a = obj_data.get("AfA_Satz", 0.02)
+            curr_m = obj_data.get("Mietsteigerung", 0.02)
+            curr_w = obj_data.get("Wertsteigerung_Immo", 0.02)
+
+            new_z = c1.slider("Zins (%)", 1.0, 6.0, curr_z*100, 0.1, key=f"z_{sel}") / 100
+            new_a = c2.slider("AfA (%)", 1.0, 5.0, curr_a*100, 0.1, key=f"a_{sel}") / 100
+            
+            # Hinweis bei Meckelfeld, dass Mietsteigerung hier inaktiv ist
+            if "Meckelfeld" in sel:
+                st.caption("ℹ️ Meckelfeld nutzt feste Stufen (2027/29/32)")
+                new_m = curr_m # Keine Änderung
+            else:
+                new_m = c3.slider("Mietsteigerung (%)", 0.0, 5.0, curr_m*100, 0.1, key=f"m_{sel}") / 100
+                
+            new_w = c4.slider("Wertsteigerung (%)", 0.0, 6.0, curr_w*100, 0.1, key=f"w_{sel}") / 100
+            
+            if (new_z != curr_z) or (new_a != curr_a) or (new_m != curr_m) or (new_w != curr_w):
+                OBJEKTE[sel]["Zins_Indiv"] = new_z
+                OBJEKTE[sel]["AfA_Satz"] = new_a
+                OBJEKTE[sel]["Mietsteigerung"] = new_m
+                OBJEKTE[sel]["Wertsteigerung_Immo"] = new_w
+                save_data(OBJEKTE)
+                st.rerun()
+
         res = calculate_investment(sel, OBJEKTE[sel])
         
         # 1. TOP KPIs
