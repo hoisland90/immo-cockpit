@@ -231,12 +231,11 @@ def calculate_investment(obj_name, params):
     equity_10 = res_10["Equity"] + sum([d["CF (nach Steuer)"] for d in data[:10]])
     cagr = ((equity_10 / invest)**(0.1) - 1) * 100 if invest > 0 else 0
     avg_cf = sum([d["CF (nach Steuer)"] for d in data[:10]]) / 120
-    # NEU: Cashflow vor Steuer Durchschnitt berechnen
     avg_cf_pre = sum([d["CF (vor Steuer)"] for d in data[:10]]) / 120
     
     return {
         "Name": obj_name, "Invest": invest, "KP": kp, "Rendite": (rent_start/kp)*100,
-        "CAGR": cagr, "Avg_CF": avg_cf, "Avg_CF_Pre": avg_cf_pre, # Hinzugefügt
+        "CAGR": cagr, "Avg_CF": avg_cf, "Avg_CF_Pre": avg_cf_pre,
         "Gewinn_10J": equity_10 - invest,
         "Detail": data, "Params": params,
         "Used_Zins": zins, "Archiviert": params.get("Archiviert", False),
@@ -310,7 +309,8 @@ if page == "📊 Portfolio Übersicht":
             "Kaufpreis": f"{r['KP']:,.0f} €",
             "Invest (EK)": f"{r['Invest']:,.0f} €",
             "Rendite": f"{r['Rendite']:.2f} %",
-            "Ø CF (Vor St.)": f"{r['Avg_CF_Pre']:,.0f} €", # NEU: CF vor Steuer
+            "EKR (10J)": f"{r['CAGR']:.2f} %", # NEU: EKR
+            "Ø CF (Vor St.)": f"{r['Avg_CF_Pre']:,.0f} €",
             "Ø CF (Nach St.)": f"{r['Avg_CF']:,.0f} €",
             "Gewinn (10J)": f"{r['Gewinn_10J']:,.0f} €"
         })
