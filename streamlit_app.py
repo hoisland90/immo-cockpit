@@ -15,7 +15,7 @@ import plotly.graph_objects as go
 # ==========================================
 st.set_page_config(page_title="Immo-Cockpit Master", layout="wide", initial_sidebar_state="expanded")
 
-# CSS für saubere Darstellung, aber Native-Look
+# CSS für saubere Darstellung
 st.markdown("""<style>div[data-baseweb="select"] > div {border-color: #808495 !important; border-width: 1px !important;}</style>""", unsafe_allow_html=True)
 
 # SICHERHEITS-LOGIN
@@ -23,7 +23,7 @@ def check_password():
     try:
         correct_password = st.secrets["password"]
     except:
-        correct_password = "123" # Fallback lokal
+        correct_password = "123" # Fallback
 
     if "password_correct" not in st.session_state:
         st.session_state["password_correct"] = False
@@ -39,7 +39,7 @@ def check_password():
 if not check_password(): st.stop()
 
 START_JAHR = 2026
-# Wir nutzen eine neue Datei "MASTER", damit keine alten Archiv-Einstellungen stören
+# Dateiname bleibt gleich wie bei der letzten Version, damit deine Daten erhalten bleiben
 DATA_FILE = "portfolio_data_master_v1.json" 
 MEDIA_DIR = "expose_files"
 
@@ -47,69 +47,60 @@ if not os.path.exists(MEDIA_DIR):
     os.makedirs(MEDIA_DIR)
 
 # ==========================================
-# 0. DATEN (ALLE OBJEKTE - RESET STATUS)
+# 0. DATEN (ALLE OBJEKTE)
 # ==========================================
 DEFAULT_OBJEKTE = {
-    # --- DIE AKTIVEN (Archiviert = False) ---
+    # --- DIE AKTIVEN ---
     "Meckelfeld (Ziel-Preis 160k)": {
         "Adresse": "Am Bach, 21217 Seevetal", "qm": 59, "zimmer": 2.0, "bj": 1965, "Kaufpreis": 160000, "Nebenkosten_Quote": 0.07, 
         "Renovierung": 0, "Heizung_Puffer": 2000, "AfA_Satz": 0.03, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
         "Miete_Start": 632.50, "Hausgeld_Gesamt": 368, "Kosten_n_uml": 130, "Marktmiete_m2": 13.45, "Energie_Info": "Gas (2022 neu), F",
         "Status": "Vermietet (Treppe)", "Link": "", "Bild_URLs": [], "PDF_Path": "", 
-        "Archiviert": False, # WICHTIG: Aktiv
-        "Basis_Info": "Zielpreis 160k. Miet-Treppe fix.", "Summary_Case": "Cashflow-King mit Steuer-Hebel.", "Summary_Pros": "Provisionsfrei, Heizung neu.", "Summary_Cons": "Energie F."
+        "Archiviert": False, "Basis_Info": "Zielpreis 160k. Miet-Treppe fix.", "Summary_Case": "Cashflow-King mit Steuer-Hebel.", "Summary_Pros": "Provisionsfrei, Heizung neu.", "Summary_Cons": "Energie F."
     },
     "Winsen (Optimierter Deal)": {
         "Adresse": "21423 Winsen (Luhe)", "qm": 55.0, "zimmer": 2.0, "bj": 1985, "Kaufpreis": 160080, "Nebenkosten_Quote": 0.1057, 
         "Renovierung": 0, "Heizung_Puffer": 1000, "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
         "Miete_Start": 633.65, "Hausgeld_Gesamt": 262, "Kosten_n_uml": 80, "Marktmiete_m2": 11.52, "Energie_Info": "Gas-Zentral, Bj 1985",
         "Status": "Vermietet (Top-Miete)", "Link": "", "Bild_URLs": [], "PDF_Path": "", 
-        "Archiviert": False, # WICHTIG: Aktiv
-        "Basis_Info": "Kaufpreis fiktiv verhandelt.", "Summary_Case": "Solide Substanz, fast neutraler CF.", "Summary_Pros": "Guter Zustand.", "Summary_Cons": "Makler."
+        "Archiviert": False, "Basis_Info": "Kaufpreis fiktiv verhandelt.", "Summary_Case": "Solide Substanz, fast neutraler CF.", "Summary_Pros": "Guter Zustand.", "Summary_Cons": "Makler."
     },
     "Neu Wulmstorf (Neubau-Anker)": {
         "Adresse": "Hauptstraße 43, 21629 Neu Wulmstorf", "qm": 65.79, "zimmer": 2.0, "bj": 2016, "Kaufpreis": 249000, "Nebenkosten_Quote": 0.07, 
         "Renovierung": 0, "Heizung_Puffer": 0, "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
         "Miete_Start": 920, "Hausgeld_Gesamt": 260, "Kosten_n_uml": 60, "Marktmiete_m2": 14.50, "Energie_Info": "Gas+Solar (Bj 2016), B",
         "Status": "Leer ab 02/2026", "Link": "", "Bild_URLs": [], "PDF_Path": "", 
-        "Archiviert": False, # WICHTIG: Aktiv
-        "Basis_Info": "Neubau 2016. Provisionsfrei.", "Summary_Case": "Sicherheits-Anker. Wertsicherung.", "Summary_Pros": "Provisionsfrei, Technik top.", "Summary_Cons": "Lage B73."
+        "Archiviert": False, "Basis_Info": "Neubau 2016. Provisionsfrei.", "Summary_Case": "Sicherheits-Anker. Wertsicherung.", "Summary_Pros": "Provisionsfrei, Technik top.", "Summary_Cons": "Lage B73."
     },
     "Elmshorn (Terrasse & Staffel)": {
         "Adresse": "Johannesstr. 24-28, 25335 Elmshorn", "qm": 75.67, "zimmer": 2.0, "bj": 1994, "Kaufpreis": 229000, "Nebenkosten_Quote": 0.1207, 
         "Renovierung": 0, "Heizung_Puffer": 1000, "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
         "Miete_Start": 665, "Hausgeld_Gesamt": 370, "Kosten_n_uml": 165, "Marktmiete_m2": 11.00, "Energie_Info": "Gas Bj 2012 (C)",
         "Status": "Vermietet (Staffel)", "Link": "", "Bild_URLs": [], "PDF_Path": "", 
-        "Archiviert": False, # WICHTIG: Aktiv
-        "Basis_Info": "Mietstaffel (26/27). Heizung 2012.", "Summary_Case": "Aufsteiger mit Rendite-Turbo.", "Summary_Pros": "Mietstaffel fix, Terrasse.", "Summary_Cons": "Hohes Hausgeld."
+        "Archiviert": False, "Basis_Info": "Mietstaffel (26/27). Heizung 2012.", "Summary_Case": "Aufsteiger mit Rendite-Turbo.", "Summary_Pros": "Mietstaffel fix, Terrasse.", "Summary_Cons": "Hohes Hausgeld."
     },
     
-    # --- DIE ARCHIVIERTEN (Standardmäßig im Archiv) ---
+    # --- DIE ARCHIVIERTEN ---
     "Harburg (Maisonette/Lifestyle)": {
         "Adresse": "Marienstr. 52, Hamburg", "qm": 71, "zimmer": 2.0, "bj": 1954, "Kaufpreis": 230000, "Nebenkosten_Quote": 0.1107, 
         "Renovierung": 0, "Heizung_Puffer": 5000, "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02, "Miete_Start": 720, "Hausgeld_Gesamt": 204, "Kosten_n_uml": 84, "Marktmiete_m2": 12.00, "Energie_Info": "Gas-Etage (D)", "Status": "Vermietet", "Link": "", "Bild_URLs": [], "PDF_Path": "", 
-        "Archiviert": True, # ARCHIV
-        "Basis_Info": "Liebhaber-Objekt. Negativer CF.", "Summary_Case": "Spekulation.", "Summary_Pros": "Galerie.", "Summary_Cons": "CF negativ."
+        "Archiviert": True, "Basis_Info": "Liebhaber-Objekt. Negativer CF.", "Summary_Case": "Spekulation.", "Summary_Pros": "Galerie.", "Summary_Cons": "CF negativ."
     },
     "Buxtehude (5-Zi Volumen)": {
         "Adresse": "Stader Str., Buxtehude", "qm": 109.07, "zimmer": 5.0, "bj": 1972, "Kaufpreis": 236000, "Nebenkosten_Quote": 0.1057, "Miete_Start": 925, "Kosten_n_uml": 120, "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02, "Renovierung": 0, "Heizung_Puffer": 2000, "Hausgeld_Gesamt": 380, "Status": "Vermietet", "Link": "", "Bild_URLs": [], "PDF_Path": "", "Energie_Info": "F", "Marktmiete_m2": 10, 
-        "Archiviert": True, # ARCHIV
-        "Basis_Info": "Viel Fläche, aber Energie F.", "Summary_Case": "Substanz-Deal.", "Summary_Pros": "Günstiger qm-Preis.", "Summary_Cons": "Energie F."
+        "Archiviert": True, "Basis_Info": "Viel Fläche, aber Energie F.", "Summary_Case": "Substanz-Deal.", "Summary_Pros": "Günstiger qm-Preis.", "Summary_Cons": "Energie F."
     },
     "Pinneberg-Thesdorf (2-Zi)": {
         "Adresse": "Thesdorf, Pinneberg", "qm": 59.0, "zimmer": 2.0, "bj": 1976, "Kaufpreis": 174000, "Nebenkosten_Quote": 0.085, "Miete_Start": 650, "Kosten_n_uml": 85, "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02, "Renovierung": 1500, "Heizung_Puffer": 0, "Hausgeld_Gesamt": 245, "Status": "Offen", "Link": "", "Bild_URLs": [], "PDF_Path": "", "Energie_Info": "D/E", "Marktmiete_m2": 11.50, 
-        "Archiviert": True, # ARCHIV
-        "Basis_Info": "Provisionsfrei.", "Summary_Case": "Solider Cashflow.", "Summary_Pros": "Provisionsfrei.", "Summary_Cons": "Beton-Charme."
+        "Archiviert": True, "Basis_Info": "Provisionsfrei.", "Summary_Case": "Solider Cashflow.", "Summary_Pros": "Provisionsfrei.", "Summary_Cons": "Beton-Charme."
     },
     "Stade (4-Zi Leerstand)": {
         "Adresse": "Köhnshöhe, Stade", "qm": 87.0, "zimmer": 3.5, "bj": 1972, "Kaufpreis": 239000, "Nebenkosten_Quote": 0.07, "Miete_Start": 950, "Kosten_n_uml": 105, "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02, "Renovierung": 0, "Heizung_Puffer": 0, "Hausgeld_Gesamt": 286, "Status": "Leerstand", "Link": "", "Bild_URLs": [], "PDF_Path": "", "Energie_Info": "E", "Marktmiete_m2": 11.50, 
-        "Archiviert": True, # ARCHIV
-        "Basis_Info": "Leerstand = Marktmiete sofort.", "Summary_Case": "Cashflow-Case.", "Summary_Pros": "Leerstand.", "Summary_Cons": "Lage Hochhaus."
+        "Archiviert": True, "Basis_Info": "Leerstand = Marktmiete sofort.", "Summary_Case": "Cashflow-Case.", "Summary_Pros": "Leerstand.", "Summary_Cons": "Lage Hochhaus."
     },
     "Stade (Altbau-Schnapper)": {
         "Adresse": "Zentrum, Stade", "qm": 67.0, "zimmer": 2.0, "bj": 1905, "Kaufpreis": 159500, "Nebenkosten_Quote": 0.1057, "Miete_Start": 575, "Kosten_n_uml": 69, "AfA_Satz": 0.025, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02, "Renovierung": 2000, "Heizung_Puffer": 5000, "Hausgeld_Gesamt": 170, "Status": "Vermietet", "Link": "", "Bild_URLs": [], "PDF_Path": "", "Energie_Info": "Gas-Etage", "Marktmiete_m2": 10, 
-        "Archiviert": True, # ARCHIV
-        "Basis_Info": "Heizung muss neu.", "Summary_Case": "Günstiger Einkauf.", "Summary_Pros": "Hohe AfA.", "Summary_Cons": "Heizungstausch."
+        "Archiviert": True, "Basis_Info": "Heizung muss neu.", "Summary_Case": "Günstiger Einkauf.", "Summary_Pros": "Hohe AfA.", "Summary_Cons": "Heizungstausch."
     }
 }
 
@@ -118,12 +109,10 @@ def load_data():
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
             merged = data.copy()
-            # Sicherstellen, dass neue Felder auch in alten Daten existieren
             for k, v in DEFAULT_OBJEKTE.items():
                 if k not in merged:
                     merged[k] = v
                 else:
-                    # Backfill fehlender Keys (z.B. Marktmiete)
                     for sub_k, sub_v in v.items():
                         if sub_k not in merged[k]:
                             merged[k][sub_k] = sub_v
@@ -180,7 +169,6 @@ def calculate_investment(obj_name, params):
     afa_rate = params.get("AfA_Satz", 0.02)
     
     nk = kp * params["Nebenkosten_Quote"]
-    # Detail-Invest Berechnung
     invest = nk + params.get("Renovierung",0) + params.get("Heizung_Puffer",0)
     
     loan = kp
@@ -300,9 +288,10 @@ if page == "📊 Portfolio Übersicht":
             
             df_wealth = pd.DataFrame({"Jahr": years, "Netto-Vermögen": list(agg_equity.values()), "Bank-Schulden": list(agg_debt.values())})
             
+            # --- FIX: KORREKTER SPALTENNAME "Bank-Schulden" ---
             fig_w = go.Figure()
             fig_w.add_trace(go.Scatter(x=df_wealth["Jahr"], y=df_wealth["Netto-Vermögen"], stackgroup='one', name='Netto-Vermögen', line=dict(color='#2E7D32', width=0)))
-            fig_w.add_trace(go.Scatter(x=df_wealth["Jahr"], y=df_wealth["Restschuld"], stackgroup='one', name='Bank-Schulden', line=dict(color='#C62828', width=0)))
+            fig_w.add_trace(go.Scatter(x=df_wealth["Jahr"], y=df_wealth["Bank-Schulden"], stackgroup='one', name='Bank-Schulden', line=dict(color='#C62828', width=0)))
             fig_w.update_layout(height=400, hovermode="x unified")
             st.plotly_chart(fig_w, use_container_width=True)
 
@@ -366,7 +355,7 @@ else:
     if obj_data.get("Link"):
         cl.markdown(f"""<a href="{obj_data['Link']}" target="_blank" style="text-decoration: none;"><div style="background-color: #0052cc; color: white; padding: 8px; text-align: center; border-radius: 5px;">↗ Zum Inserat</div></a>""", unsafe_allow_html=True)
     
-    # --- GALERIE FIX ---
+    # --- GALERIE FIX (LEERE URLS ABFANGEN) ---
     valid_imgs = [u for u in obj_data.get("Bild_URLs", []) if u and u.strip()]
     if valid_imgs:
         st.markdown("---")
@@ -417,7 +406,7 @@ else:
     st.subheader("📋 10-Jahres-Plan")
     df_full = pd.DataFrame(res["Detail"])
     
-    # --- TABLE FIX ---
+    # --- TABLE FIX (Kein .style.format, sondern column_config) ---
     st.dataframe(
         df_full.head(10)[["Laufzeit", "Miete (mtl.)", "CF (vor Steuer)", "CF (nach Steuer)", "Restschuld"]],
         column_config={
@@ -445,6 +434,7 @@ else:
         n_link = st.text_input("Link", value=obj_data.get("Link", ""))
         n_imgs = st.text_area("Bilder (URLs)", value="\n".join(obj_data.get("Bild_URLs", [])))
         if st.button("💾 Speichern"):
+            # Clean images (remove empty lines)
             clean_imgs = [x.strip() for x in n_imgs.split("\n") if x.strip()]
             OBJEKTE[sel].update({"Archiviert": is_archived, "Kaufpreis": n_kp, "Link": n_link, "Bild_URLs": clean_imgs})
             save_data(OBJEKTE)
