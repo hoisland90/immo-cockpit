@@ -54,6 +54,23 @@ if not os.path.exists(MEDIA_DIR):
 # ==========================================
 DEFAULT_OBJEKTE = {
     # --- DIE AKTIVEN ---
+    "Pinneberg (Zentral & Privat)": {
+        "Adresse": "Friedrich-Ebert-Straße 14, Pinneberg", 
+        "qm": 74.0, "zimmer": 3.0, "bj": 1975, # Baujahr geschätzt (nicht im Exposé, aber Optik/Sanierung spricht dafür)
+        "Kaufpreis": 239500, "Nebenkosten_Quote": 0.07, # Provisionsfrei! (Nur Notar+Steuer)
+        "Renovierung": 0, "Heizung_Puffer": 0, # Wurde saniert
+        "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
+        "Miete_Start": 704, # Ist-Miete
+        "Hausgeld_Gesamt": 250, "Kosten_n_uml": 80, 
+        "Marktmiete_m2": 12.00, "Energie_Info": "Gas-Zentral",
+        "Status": "Vermietet (Unter Markt)", "Link": "https://www.kleinanzeigen.de/s-anzeige/zentrale-lage-in-pinneberg-kapitalanlage-oder-selbstnutzung-/3303154309-196-786", 
+        "Bild_URLs": [], "PDF_Path": "", 
+        "Archiviert": False, 
+        "Basis_Info": "Privatverkauf (ohne Makler). Frisch saniert.", 
+        "Summary_Case": "Negativer Cashflow (-400€). Wette auf Neuvermietung.", 
+        "Summary_Pros": "Keine Provision, Top-Zustand, Rücklagen vorhanden.", 
+        "Summary_Cons": "Kaufpreis zu hoch für aktuelle Miete (3,5% Rendite)."
+    },
 "Buxtehude (Dachterrasse & Lift)": {
         "Adresse": "Buxtehude Süd (Stader Str. Umgebung)", 
         "qm": 66.26, "zimmer": 2.0, "bj": 1992, 
