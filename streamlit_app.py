@@ -54,6 +54,25 @@ if not os.path.exists(MEDIA_DIR):
 # ==========================================
 DEFAULT_OBJEKTE = {
     # --- DIE AKTIVEN ---
+"Elmshorn (Keller-Wohnung - Ohne Puffer)": {
+        "Adresse": "Johannesstraße, Elmshorn", 
+        "qm": 75.0, "zimmer": 3.0, "bj": 1970, 
+        "Kaufpreis": 200000, "Nebenkosten_Quote": 0.10, 
+        "Renovierung": 0, # Puffer (30k) erstmal rausgenommen!
+        "Heizung_Puffer": 0, 
+        "AfA_Satz": 0.02, "Mietsteigerung": 0.02, "Wertsteigerung_Immo": 0.02,
+        "Miete_Start": 750, # Annahme: 10€/qm
+        "Hausgeld_Gesamt": 350, "Kosten_n_uml": 100, 
+        "Marktmiete_m2": 11.50, "Energie_Info": "Gas",
+        "Status": "Kritisch (Schaden ausgeblendet)", "Link": "", 
+        "Bild_URLs": [], "PDF_Path": "", 
+        "Archiviert": False, 
+        "Basis_Info": "Szenario: Wir ignorieren den Wasserschaden rechnerisch.", 
+        "Summary_Case": "Rechnerisch guter Cashflow, aber real hohes Risiko (Schaben/Wasser).", 
+        "Summary_Pros": "Preis/Leistung auf dem Papier top.", 
+        "Summary_Cons": "Sanierungskosten (Keller) fehlen in der Rechnung!"
+    },
+    
     "Pinneberg (Zentral & Privat)": {
         "Adresse": "Friedrich-Ebert-Straße 14, Pinneberg", 
         "qm": 74.0, "zimmer": 3.0, "bj": 1975, # Baujahr geschätzt (nicht im Exposé, aber Optik/Sanierung spricht dafür)
